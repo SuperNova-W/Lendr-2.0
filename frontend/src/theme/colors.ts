@@ -1,0 +1,15 @@
+export const COLORS = {
+  bg: '#F6F4EA',
+  surface: '#FFFFFF',
+  surfaceSub: '#F9F8F2',
+  amber: '#E8A820',
+  amberLight: '#FDF5DC',
+  amberDark: '#C48C10',
+  green: '#2E9B6A',
+  greenLight: '#E4F4ED',
+  text1: '#1A1914',
+  text2: '#4B4A44',
+  text3: '#9B9990',
+  border: '#E6E2D6',
+  borderFocus: '#E8A820',
+};
