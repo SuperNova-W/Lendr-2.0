@@ -1,12 +1,15 @@
 import React from 'react';
 import { StyleSheet, Text, View, Pressable } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../theme/colors';
 
-const NAV = [
-  { icon: '🏠', label: 'Home', id: 'home' },
-  { icon: '🔍', label: 'Browse', id: 'browse' },
-  { icon: '📦', label: 'Requests', id: 'requests' },
-  { icon: '👤', label: 'Profile', id: 'profile' },
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
+
+const NAV: { iconActive: IoniconsName; iconInactive: IoniconsName; label: string; id: string }[] = [
+  { iconActive: 'home',          iconInactive: 'home-outline',        label: 'Home',     id: 'home' },
+  { iconActive: 'search',        iconInactive: 'search-outline',      label: 'Browse',   id: 'browse' },
+  { iconActive: 'cube',          iconInactive: 'cube-outline',        label: 'Requests', id: 'requests' },
+  { iconActive: 'person',        iconInactive: 'person-outline',      label: 'Profile',  id: 'profile' },
 ];
 
 interface BottomNavProps {
@@ -26,11 +29,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeNav, setActiveNav, p
             style={styles.navItem}
             onPress={() => setActiveNav(n.id)}
           >
-            <Text style={styles.navIcon}>{n.icon}</Text>
+            <Ionicons
+              name={isActive ? n.iconActive : n.iconInactive}
+              size={24}
+              color={isActive ? COLORS.amber : COLORS.text3}
+            />
             <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
               {n.label}
             </Text>
-            {isActive && <View style={styles.navDot} />}
           </Pressable>
         );
       })}
@@ -57,20 +63,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     gap: 4,
   },
-  navIcon: { fontSize: 20 },
   navLabel: {
     fontFamily: 'Inter_500Medium',
     fontSize: 10,
     color: COLORS.text3,
     letterSpacing: 0.2,
   },
-  navLabelActive: { color: COLORS.amberDark },
-  navDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: COLORS.amber,
-    position: 'absolute',
-    bottom: -6,
-  },
+  navLabelActive: { color: COLORS.amber },
 });

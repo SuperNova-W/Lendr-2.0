@@ -34,27 +34,23 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
       >
         {/* ── Header ── */}
         <View style={styles.header}>
-          <View>
-            <View style={styles.logoRow}>
-              <Text style={styles.headerLogo}>Lendr</Text>
-              <Text style={styles.headerLogoDot}>.</Text>
+          <View style={styles.headerLeft}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>K</Text>
             </View>
-            <Text style={styles.headerSub}>Your campus marketplace</Text>
+            <View>
+              <Text style={styles.headerGreeting}>Hi, Kayla 👋</Text>
+              <Text style={styles.headerSub}>Let's go borrowing</Text>
+            </View>
           </View>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>K</Text>
+          <View style={styles.headerActions}>
+            <Pressable style={styles.iconBtn}>
+              <Text style={styles.iconBtnText}>💬</Text>
+            </Pressable>
+            <Pressable style={styles.iconBtn}>
+              <Text style={styles.iconBtnText}>🔔</Text>
+            </Pressable>
           </View>
-        </View>
-
-        <View style={styles.divider} />
-
-        {/* ── Hero ── */}
-        <View style={styles.hero}>
-          <Text style={styles.heroTitle}>Borrow what you need,</Text>
-          <Text style={styles.heroTitle}>share what you have.</Text>
-          <Text style={styles.heroSub}>
-            Students helping students save money on campus.
-          </Text>
         </View>
 
         <View style={styles.divider} />
@@ -168,7 +164,14 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
         <View style={{ height: 24 }} />
       </ScrollView>
 
-      <BottomNav activeNav={activeNav} setActiveNav={setActiveNav} paddingBottom={insets.bottom} />
+      <BottomNav
+        activeNav={activeNav}
+        setActiveNav={(id) => {
+          if (id === 'profile') navigation.navigate('Profile');
+          else setActiveNav(id);
+        }}
+        paddingBottom={insets.bottom}
+      />
     </View>
   );
 };
@@ -183,44 +186,57 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 28,
+    paddingTop: 20,
+    paddingBottom: 20,
   },
-  logoRow: { flexDirection: 'row' },
-  headerLogo: {
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerGreeting: {
     fontFamily: 'Inter_700Bold',
-    fontSize: 21,
+    fontSize: 16,
     color: COLORS.text1,
-    letterSpacing: -0.3,
-  },
-  headerLogoDot: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 21,
-    color: COLORS.amber,
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
   },
   headerSub: {
     fontFamily: 'Inter_400Regular',
     fontSize: 12,
     color: COLORS.text3,
-    marginTop: 2,
+    marginTop: 1,
   },
-  avatar: {
+  headerActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  iconBtn: {
     width: 38,
     height: 38,
     borderRadius: 19,
+    backgroundColor: COLORS.surfaceSub,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconBtnText: {
+    fontSize: 17,
+  },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: COLORS.amberLight,
-    borderWidth: 1.5,
-    borderColor: COLORS.border,
+    borderWidth: 2,
+    borderColor: COLORS.amber,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 13,
+    fontFamily: 'Inter_700Bold',
+    fontSize: 16,
     color: COLORS.amberDark,
   },
   divider: {
@@ -228,24 +244,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.border,
     marginHorizontal: 24,
     marginBottom: 28,
-  },
-  hero: {
-    paddingHorizontal: 24,
-    paddingBottom: 24,
-  },
-  heroTitle: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 26,
-    color: COLORS.text1,
-    lineHeight: 32,
-    letterSpacing: -0.4,
-  },
-  heroSub: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 14,
-    color: COLORS.text3,
-    marginTop: 8,
-    lineHeight: 21,
   },
   statsRow: {
     flexDirection: 'row',
