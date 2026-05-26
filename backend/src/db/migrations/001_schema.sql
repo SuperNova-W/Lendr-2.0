@@ -1,9 +1,10 @@
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- Run this in: Supabase Dashboard → SQL Editor → New query
 
 -- ── users ────────────────────────────────────────────────────
+-- id matches auth.users.id from Supabase Auth — no uuid_generate_v4() needed.
 CREATE TABLE users (
-  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  google_id    VARCHAR(128) UNIQUE NOT NULL,
+  id           UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  google_id    TEXT,                         -- kept for reference, not used for auth
   email        VARCHAR(255) UNIQUE NOT NULL,
   name         VARCHAR(128) NOT NULL,
   avatar_url   TEXT,
@@ -21,7 +22,7 @@ CREATE TYPE item_category AS ENUM (
 );
 
 CREATE TABLE items (
-  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   owner_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   title         VARCHAR(160) NOT NULL,
   description   TEXT,
@@ -45,7 +46,7 @@ CREATE TYPE request_status AS ENUM (
 );
 
 CREATE TABLE requests (
-  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   item_id      UUID NOT NULL REFERENCES items(id),
   borrower_id  UUID NOT NULL REFERENCES users(id),
   owner_id     UUID NOT NULL REFERENCES users(id),
@@ -65,7 +66,7 @@ CREATE INDEX idx_req_status   ON requests (status);
 
 -- ── ratings ──────────────────────────────────────────────────
 CREATE TABLE ratings (
-  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   request_id UUID NOT NULL REFERENCES requests(id),
   rater_id   UUID NOT NULL REFERENCES users(id),
   ratee_id   UUID NOT NULL REFERENCES users(id),

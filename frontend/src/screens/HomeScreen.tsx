@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, TextInput, ScrollView, Pressable, StatusBar } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../theme/colors';
 import { CATEGORIES, FEATURED, LISTINGS } from '../data/dummyData';
@@ -26,7 +27,7 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.bg} />
-      
+
       <ScrollView
         style={styles.screen}
         showsVerticalScrollIndicator={false}
@@ -39,16 +40,16 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
               <Text style={styles.avatarText}>K</Text>
             </View>
             <View>
-              <Text style={styles.headerGreeting}>Hi, Kayla 👋</Text>
+              <Text style={styles.headerGreeting}>Hi, Kayla</Text>
               <Text style={styles.headerSub}>Let's go borrowing</Text>
             </View>
           </View>
           <View style={styles.headerActions}>
             <Pressable style={styles.iconBtn}>
-              <Text style={styles.iconBtnText}>💬</Text>
+              <Ionicons name="chatbubble-ellipses-outline" size={18} color={COLORS.text1} />
             </Pressable>
             <Pressable style={styles.iconBtn}>
-              <Text style={styles.iconBtnText}>🔔</Text>
+              <Ionicons name="notifications-outline" size={18} color={COLORS.text1} />
             </Pressable>
           </View>
         </View>
@@ -76,7 +77,7 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
         {/* ── Search ── */}
         <View style={styles.searchWrap}>
           <View style={styles.searchBar}>
-            <Text style={styles.searchIcon}>🔍</Text>
+            <Ionicons name="search" size={16} color={COLORS.text3} style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
               placeholder="Search for an item..."
@@ -124,10 +125,10 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
               style={styles.featuredScroll}
             >
               {FEATURED.map(item => (
-                <FeaturedCard 
-                  key={item.id} 
-                  item={item} 
-                  onPress={() => navigation.navigate('ItemDetail', { item })} 
+                <FeaturedCard
+                  key={item.id}
+                  item={item}
+                  onPress={() => navigation.navigate('ItemDetail', { item })}
                 />
               ))}
             </ScrollView>
@@ -147,20 +148,20 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
         <View style={styles.listings}>
           {filtered.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyStateIcon}>📭</Text>
+              <Ionicons name="search-outline" size={32} color={COLORS.text3} />
               <Text style={styles.emptyStateText}>No items found — try a different search.</Text>
             </View>
           ) : (
             filtered.map(item => (
-              <ListingCard 
-                key={item.id} 
-                item={item} 
-                onPress={() => navigation.navigate('ItemDetail', { item })} 
+              <ListingCard
+                key={item.id}
+                item={item}
+                onPress={() => navigation.navigate('ItemDetail', { item })}
               />
             ))
           )}
         </View>
-        
+
         <View style={{ height: 24 }} />
       </ScrollView>
 
@@ -221,9 +222,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconBtnText: {
-    fontSize: 17,
-  },
   avatar: {
     width: 44,
     height: 44,
@@ -282,7 +280,7 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.surfaceSub,
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 22,
@@ -295,8 +293,6 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   searchIcon: {
-    fontSize: 15,
-    color: COLORS.text3,
     marginRight: 10,
   },
   searchInput: {
@@ -362,10 +358,7 @@ const styles = StyleSheet.create({
   emptyState: {
     paddingVertical: 48,
     alignItems: 'center',
-  },
-  emptyStateIcon: {
-    fontSize: 36,
-    marginBottom: 10,
+    gap: 10,
   },
   emptyStateText: {
     fontFamily: 'Inter_400Regular',

@@ -6,10 +6,10 @@ import { COLORS } from '../theme/colors';
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
 const NAV: { iconActive: IoniconsName; iconInactive: IoniconsName; label: string; id: string }[] = [
-  { iconActive: 'home',          iconInactive: 'home-outline',        label: 'Home',     id: 'home' },
-  { iconActive: 'search',        iconInactive: 'search-outline',      label: 'Browse',   id: 'browse' },
-  { iconActive: 'cube',          iconInactive: 'cube-outline',        label: 'Requests', id: 'requests' },
-  { iconActive: 'person',        iconInactive: 'person-outline',      label: 'Profile',  id: 'profile' },
+  { iconActive: 'home',   iconInactive: 'home-outline',   label: 'Home',     id: 'home' },
+  { iconActive: 'search', iconInactive: 'search-outline', label: 'Browse',   id: 'browse' },
+  { iconActive: 'cube',   iconInactive: 'cube-outline',   label: 'Requests', id: 'requests' },
+  { iconActive: 'person', iconInactive: 'person-outline', label: 'Profile',  id: 'profile' },
 ];
 
 interface BottomNavProps {

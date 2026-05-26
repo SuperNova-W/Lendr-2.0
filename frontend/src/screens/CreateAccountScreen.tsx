@@ -8,9 +8,9 @@ import {
   ScrollView,
   StatusBar,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const PRIMARY = '#4F46E5';
+import { COLORS } from '../theme/colors';
 
 export const CreateAccountScreen: React.FC<any> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
@@ -29,16 +29,12 @@ export const CreateAccountScreen: React.FC<any> = ({ navigation }) => {
         contentContainerStyle={[styles.scroll, { paddingBottom: Math.max(insets.bottom, 32) }]}
         keyboardShouldPersistTaps="handled"
       >
-        {/* ── Title ── */}
         <View style={styles.titleBlock}>
           <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Start learning with create your account</Text>
+          <Text style={styles.subtitle}>Start borrowing with your new account</Text>
         </View>
 
-        {/* ── Form ── */}
         <View style={styles.form}>
-
-          {/* Username */}
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>Username</Text>
             <View style={[styles.inputWrap, focusedField === 'username' && styles.inputFocused]}>
@@ -55,7 +51,6 @@ export const CreateAccountScreen: React.FC<any> = ({ navigation }) => {
             </View>
           </View>
 
-          {/* Email / Phone */}
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>Email or Phone Number</Text>
             <View style={[styles.inputWrap, focusedField === 'contact' && styles.inputFocused]}>
@@ -73,7 +68,6 @@ export const CreateAccountScreen: React.FC<any> = ({ navigation }) => {
             </View>
           </View>
 
-          {/* Password */}
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>Password</Text>
             <View style={[styles.inputWrap, focusedField === 'password' && styles.inputFocused]}>
@@ -88,13 +82,16 @@ export const CreateAccountScreen: React.FC<any> = ({ navigation }) => {
                 onBlur={() => setFocusedField(null)}
               />
               <Pressable onPress={() => setShowPassword(v => !v)} style={styles.eyeBtn}>
-                <Text style={styles.eyeToggle}>{showPassword ? 'Hide' : 'Show'}</Text>
+                <Ionicons
+                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                  size={18}
+                  color={COLORS.text2}
+                />
               </Pressable>
             </View>
           </View>
         </View>
 
-        {/* ── Primary CTA ── */}
         <Pressable
           style={styles.primaryBtn}
           onPress={() => navigation.navigate('Home')}
@@ -102,27 +99,24 @@ export const CreateAccountScreen: React.FC<any> = ({ navigation }) => {
           <Text style={styles.primaryBtnText}>Create Account</Text>
         </Pressable>
 
-        {/* ── Divider ── */}
         <View style={styles.dividerRow}>
           <View style={styles.dividerLine} />
           <Text style={styles.dividerText}>Or using other method</Text>
           <View style={styles.dividerLine} />
         </View>
 
-        {/* ── Social Buttons ── */}
         <View style={styles.socialButtons}>
           <Pressable style={styles.socialBtn}>
-            <Text style={styles.socialIcon}>G</Text>
+            <Ionicons name="logo-google" size={18} color="#EA4335" />
             <Text style={styles.socialBtnText}>Sign Up with Google</Text>
           </Pressable>
 
           <Pressable style={styles.socialBtn}>
-            <Text style={[styles.socialIcon, styles.fbIcon]}>f</Text>
-            <Text style={styles.socialBtnText}>Sign Up with Facebook</Text>
+            <Ionicons name="logo-apple" size={18} color={COLORS.text1} />
+            <Text style={styles.socialBtnText}>Sign Up with Apple</Text>
           </Pressable>
         </View>
 
-        {/* ── Sign In link ── */}
         <Pressable style={styles.signinRow} onPress={() => navigation.navigate('Home')}>
           <Text style={styles.signinText}>Already have an account? </Text>
           <Text style={styles.signinLink}>Sign In</Text>
@@ -142,24 +136,22 @@ const styles = StyleSheet.create({
     paddingTop: 32,
   },
 
-  // Title block
   titleBlock: {
     marginBottom: 36,
   },
   title: {
     fontFamily: 'Inter_700Bold',
     fontSize: 28,
-    color: '#1A1A2E',
+    color: COLORS.inkOnboarding1,
     letterSpacing: -0.5,
     marginBottom: 6,
   },
   subtitle: {
     fontFamily: 'Inter_400Regular',
     fontSize: 14,
-    color: '#9B9BAA',
+    color: COLORS.inkOnboarding3,
   },
 
-  // Form
   form: {
     gap: 20,
     marginBottom: 32,
@@ -170,41 +162,35 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 14,
-    color: '#1A1A2E',
+    color: COLORS.inkOnboarding1,
   },
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: '#E8E8F0',
+    borderColor: COLORS.borderInput,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 13,
-    backgroundColor: '#FAFAFC',
+    backgroundColor: COLORS.surfaceInput,
     gap: 10,
   },
   inputFocused: {
-    borderColor: PRIMARY,
+    borderColor: COLORS.amber,
     backgroundColor: '#FFFFFF',
   },
   input: {
     flex: 1,
     fontFamily: 'Inter_400Regular',
     fontSize: 14,
-    color: '#1A1A2E',
+    color: COLORS.inkOnboarding1,
   },
   eyeBtn: {
     padding: 2,
   },
-  eyeToggle: {
-    fontFamily: 'Inter_500Medium',
-    fontSize: 13,
-    color: PRIMARY,
-  },
 
-  // Primary button
   primaryBtn: {
-    backgroundColor: PRIMARY,
+    backgroundColor: COLORS.amber,
     borderRadius: 999,
     paddingVertical: 16,
     alignItems: 'center',
@@ -217,7 +203,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.1,
   },
 
-  // Divider
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -227,15 +212,14 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E8E8F0',
+    backgroundColor: COLORS.borderInput,
   },
   dividerText: {
     fontFamily: 'Inter_400Regular',
     fontSize: 13,
-    color: '#9B9BAA',
+    color: COLORS.inkOnboarding3,
   },
 
-  // Social buttons
   socialButtons: {
     gap: 12,
     marginBottom: 32,
@@ -245,29 +229,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: '#E8E8F0',
+    borderColor: COLORS.borderInput,
     borderRadius: 12,
     paddingVertical: 14,
     gap: 10,
     backgroundColor: '#FFFFFF',
   },
-  socialIcon: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 18,
-    color: '#EA4335',
-    width: 24,
-    textAlign: 'center',
-  },
-  fbIcon: {
-    color: '#1877F2',
-  },
   socialBtnText: {
     fontFamily: 'Inter_500Medium',
     fontSize: 15,
-    color: '#1A1A2E',
+    color: COLORS.inkOnboarding1,
   },
 
-  // Sign in row
   signinRow: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -276,11 +249,11 @@ const styles = StyleSheet.create({
   signinText: {
     fontFamily: 'Inter_400Regular',
     fontSize: 14,
-    color: '#9B9BAA',
+    color: COLORS.inkOnboarding3,
   },
   signinLink: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 14,
-    color: PRIMARY,
+    color: COLORS.amber,
   },
 });

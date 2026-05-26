@@ -7,25 +7,43 @@ import {
   Pressable,
   StatusBar,
   Dimensions,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { COLORS } from '../theme/colors';
 
-const PRIMARY = '#4F46E5';
 const { width: SCREEN_W } = Dimensions.get('window');
 
+// Each slide uses real product photos in a 2×2 collage on a surface-sub tile.
+// Per the rebrand, emoji are retired as primary visual content.
 const SLIDES = [
   {
-    emojis: ['📚', '🖥️', '📐', '🎒', '📷', '🎧'],
+    photos: [
+      'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?w=300&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1561154464-82e9adf32764?w=300&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=300&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&q=80&auto=format&fit=crop',
+    ],
     title: 'Borrow What You\nNeed, When You Need It',
     body: 'From textbooks to tech, find everything you need for campus life without buying it outright.',
   },
   {
-    emojis: ['🚲', '🎾', '🏕️', '⚽', '🎿', '🛹'],
+    photos: [
+      'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=300&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1617083277720-12dd5fdbf73c?w=300&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=300&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=300&q=80&auto=format&fit=crop',
+    ],
     title: 'Complete Collection\nOf Campus Items',
     body: 'Sports gear, outdoor equipment, and more — all listed by students just like you.',
   },
   {
-    emojis: ['👔', '👗', '📷', '💼', '🎩', '✨'],
+    photos: [
+      'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=300&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=300&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=300&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1585664811087-47f65abbad64?w=300&q=80&auto=format&fit=crop',
+    ],
     title: 'Find The Most Suitable\nItem For You',
     body: 'Browse by category, location, or price. Renting has never been this easy on campus.',
   },
@@ -46,7 +64,6 @@ export const OnboardingScreen: React.FC<any> = ({ navigation }) => {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
-      {/* ── Slides ── */}
       <ScrollView
         ref={scrollRef}
         horizontal
@@ -57,32 +74,28 @@ export const OnboardingScreen: React.FC<any> = ({ navigation }) => {
       >
         {SLIDES.map((slide, i) => (
           <View key={i} style={[styles.slide, { width: SCREEN_W }]}>
-            {/* Illustration */}
             <View style={styles.illustration}>
-              <View style={styles.emojiGrid}>
-                {slide.emojis.map((e, j) => (
-                  <View key={j} style={styles.emojiCell}>
-                    <Text style={styles.emojiText}>{e}</Text>
+              <View style={styles.photoGrid}>
+                {slide.photos.map((src, j) => (
+                  <View key={j} style={styles.photoCell}>
+                    <Image source={{ uri: src }} style={styles.photoImg} />
                   </View>
                 ))}
               </View>
             </View>
 
-            {/* Text */}
             <Text style={styles.title}>{slide.title}</Text>
             <Text style={styles.body}>{slide.body}</Text>
           </View>
         ))}
       </ScrollView>
 
-      {/* ── Dots ── */}
       <View style={styles.dots}>
         {SLIDES.map((_, i) => (
           <View key={i} style={[styles.dot, i === page && styles.dotActive]} />
         ))}
       </View>
 
-      {/* ── Buttons ── */}
       <View style={[styles.buttons, { paddingBottom: Math.max(insets.bottom, 28) }]}>
         <Pressable
           style={styles.primaryBtn}
@@ -113,48 +126,45 @@ const styles = StyleSheet.create({
     paddingTop: 24,
   },
 
-  // Illustration box
   illustration: {
     width: '100%',
     aspectRatio: 1,
     maxHeight: 320,
-    backgroundColor: '#F4F4F8',
+    backgroundColor: COLORS.surfaceSub,
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 36,
     overflow: 'hidden',
+    padding: 18,
   },
-  emojiGrid: {
+  photoGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    width: '72%',
-    gap: 16,
+    width: '85%',
+    aspectRatio: 1,
+    gap: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  emojiCell: {
-    width: 64,
-    height: 64,
-    backgroundColor: '#FFFFFF',
+  photoCell: {
+    width: '47%',
+    aspectRatio: 1,
     borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#fff',
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 6,
     elevation: 3,
   },
-  emojiText: {
-    fontSize: 30,
-  },
+  photoImg: { width: '100%', height: '100%' },
 
-  // Slide text
   title: {
     fontFamily: 'Inter_700Bold',
     fontSize: 22,
-    color: '#1A1A2E',
+    color: COLORS.inkOnboarding1,
     textAlign: 'center',
     lineHeight: 30,
     letterSpacing: -0.4,
@@ -163,12 +173,11 @@ const styles = StyleSheet.create({
   body: {
     fontFamily: 'Inter_400Regular',
     fontSize: 14,
-    color: '#9B9BAA',
+    color: COLORS.inkOnboarding3,
     textAlign: 'center',
     lineHeight: 22,
   },
 
-  // Pagination dots
   dots: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -184,16 +193,15 @@ const styles = StyleSheet.create({
   },
   dotActive: {
     width: 20,
-    backgroundColor: PRIMARY,
+    backgroundColor: COLORS.amber,
   },
 
-  // Buttons
   buttons: {
     paddingHorizontal: 28,
     gap: 16,
   },
   primaryBtn: {
-    backgroundColor: PRIMARY,
+    backgroundColor: COLORS.amber,
     borderRadius: 999,
     paddingVertical: 16,
     alignItems: 'center',
@@ -211,6 +219,6 @@ const styles = StyleSheet.create({
   secondaryBtnText: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 14,
-    color: PRIMARY,
+    color: COLORS.amber,
   },
 });

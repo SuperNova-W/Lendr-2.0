@@ -1,27 +1,62 @@
 import React from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, StatusBar } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Pressable, StatusBar, Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../theme/colors';
 import { BottomNav } from '../components/BottomNav';
 
 const MY_LISTINGS = [
-  { id: 4, emoji: '📐', title: 'TI-84 Plus CE', price: '$3/day', tag: 'Tech', active: true },
-  { id: 5, emoji: '👔', title: 'Suit Jacket (M)', price: '$8/day', tag: 'Formal', active: true },
-  { id: 6, emoji: '📚', title: 'Organic Chem Textbook', price: '$4/day', tag: 'Textbooks', active: false },
+  {
+    id: 4,
+    title: 'TI-84 Plus CE',
+    price: '$3/day',
+    tag: 'Tech',
+    active: true,
+    photoUrl: 'https://images.unsplash.com/photo-1564939558297-fc396f18e5c7?w=200&q=80&auto=format&fit=crop',
+  },
+  {
+    id: 5,
+    title: 'Suit Jacket (M)',
+    price: '$8/day',
+    tag: 'Formal',
+    active: true,
+    photoUrl: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=200&q=80&auto=format&fit=crop',
+  },
+  {
+    id: 6,
+    title: 'Organic Chem Textbook',
+    price: '$4/day',
+    tag: 'Textbooks',
+    active: false,
+    photoUrl: 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?w=200&q=80&auto=format&fit=crop',
+  },
 ];
 
 const RECENT_BORROWS = [
-  { id: 1, emoji: '🚲', title: 'Campus Bike', price: '$5/day', date: 'May 12–15' },
-  { id: 2, emoji: '📷', title: 'Sony A7 III', price: '$22/day', date: 'Apr 28–29' },
+  {
+    id: 1,
+    title: 'Campus Bike',
+    price: '$5/day',
+    date: 'May 12–15',
+    photoUrl: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=200&q=80&auto=format&fit=crop',
+  },
+  {
+    id: 2,
+    title: 'Sony A7 III',
+    price: '$22/day',
+    date: 'Apr 28–29',
+    photoUrl: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=200&q=80&auto=format&fit=crop',
+  },
 ];
 
-const SETTINGS_ROWS = [
-  { icon: '🔔', label: 'Notifications', detail: 'On' },
-  { icon: '🔒', label: 'Privacy & Safety', detail: '' },
-  { icon: '💬', label: 'Help & Support', detail: '' },
-  { icon: '📄', label: 'Terms & Privacy', detail: '' },
-];
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
+const SETTINGS_ROWS: { icon: IoniconsName; label: string; detail?: string }[] = [
+  { icon: 'notifications-outline', label: 'Notifications', detail: 'On' },
+  { icon: 'shield-outline',        label: 'Privacy & Safety' },
+  { icon: 'chatbubbles-outline',   label: 'Help & Support' },
+  { icon: 'document-text-outline', label: 'Terms & Privacy' },
+];
 
 export const ProfileScreen: React.FC<any> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
@@ -42,7 +77,7 @@ export const ProfileScreen: React.FC<any> = ({ navigation }) => {
             <Text style={styles.headerLogoDot}>.</Text>
           </View>
           <Pressable style={styles.settingsBtn} onPress={() => navigation.navigate('Settings')}>
-            <Text style={styles.settingsIcon}>⚙️</Text>
+            <Ionicons name="settings-outline" size={18} color={COLORS.text1} />
           </Pressable>
         </View>
 
@@ -59,10 +94,12 @@ export const ProfileScreen: React.FC<any> = ({ navigation }) => {
             <Text style={styles.profileSub}>UCLA · Junior</Text>
             <View style={styles.badgeRow}>
               <View style={styles.badge}>
-                <Text style={styles.badgeText}>⭐ 4.9</Text>
+                <Ionicons name="star" size={11} color="#F5B324" />
+                <Text style={styles.badgeText}>4.9</Text>
               </View>
               <View style={styles.badge}>
-                <Text style={styles.badgeText}>✅ Verified</Text>
+                <Ionicons name="checkmark" size={11} color={COLORS.green} />
+                <Text style={styles.badgeText}>Verified</Text>
               </View>
             </View>
           </View>
@@ -73,7 +110,7 @@ export const ProfileScreen: React.FC<any> = ({ navigation }) => {
         </View>
 
         <Text style={styles.profileBio}>
-          Lending stuff so we can all stop overpaying on campus. 🎓
+          Lending stuff so we can all stop overpaying on campus.
         </Text>
 
         <View style={styles.divider} />
@@ -100,15 +137,19 @@ export const ProfileScreen: React.FC<any> = ({ navigation }) => {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>My Listings</Text>
           <Pressable style={styles.addBtn}>
-            <Text style={styles.addBtnText}>+ Add Item</Text>
+            <Ionicons name="add" size={14} color="#fff" />
+            <Text style={styles.addBtnText}>Add Item</Text>
           </Pressable>
         </View>
 
         <View style={styles.listingsStack}>
-          {MY_LISTINGS.map(item => (
-            <View key={item.id} style={styles.myListingCard}>
-              <View style={styles.myListingEmoji}>
-                <Text style={styles.myListingEmojiText}>{item.emoji}</Text>
+          {MY_LISTINGS.map((item, i) => (
+            <View
+              key={item.id}
+              style={[styles.myListingCard, i === MY_LISTINGS.length - 1 && { borderBottomWidth: 0 }]}
+            >
+              <View style={styles.thumb}>
+                <Image source={{ uri: item.photoUrl }} style={styles.thumbImg} />
               </View>
               <View style={styles.myListingInfo}>
                 <Text style={styles.myListingTitle} numberOfLines={1}>{item.title}</Text>
@@ -132,10 +173,13 @@ export const ProfileScreen: React.FC<any> = ({ navigation }) => {
         </View>
 
         <View style={styles.listingsStack}>
-          {RECENT_BORROWS.map(item => (
-            <View key={item.id} style={styles.myListingCard}>
-              <View style={styles.myListingEmoji}>
-                <Text style={styles.myListingEmojiText}>{item.emoji}</Text>
+          {RECENT_BORROWS.map((item, i) => (
+            <View
+              key={item.id}
+              style={[styles.myListingCard, i === RECENT_BORROWS.length - 1 && { borderBottomWidth: 0 }]}
+            >
+              <View style={styles.thumb}>
+                <Image source={{ uri: item.photoUrl }} style={styles.thumbImg} />
               </View>
               <View style={styles.myListingInfo}>
                 <Text style={styles.myListingTitle} numberOfLines={1}>{item.title}</Text>
@@ -155,11 +199,13 @@ export const ProfileScreen: React.FC<any> = ({ navigation }) => {
           {SETTINGS_ROWS.map((row, i) => (
             <View key={row.label}>
               <Pressable style={styles.settingsRow} onPress={() => navigation.navigate('Settings')}>
-                <Text style={styles.settingsRowIcon}>{row.icon}</Text>
+                <View style={styles.settingsIconTile}>
+                  <Ionicons name={row.icon} size={16} color={COLORS.text1} />
+                </View>
                 <Text style={styles.settingsRowLabel}>{row.label}</Text>
                 <View style={styles.settingsRowRight}>
                   {row.detail ? <Text style={styles.settingsRowDetail}>{row.detail}</Text> : null}
-                  <Text style={styles.settingsRowChevron}>›</Text>
+                  <Ionicons name="chevron-forward" size={16} color={COLORS.text3} />
                 </View>
               </Pressable>
               {i < SETTINGS_ROWS.length - 1 && <View style={styles.rowDivider} />}
@@ -209,7 +255,7 @@ const styles = StyleSheet.create({
   headerLogoDot: {
     fontFamily: 'Inter_700Bold',
     fontSize: 21,
-    color: COLORS.amber,
+    color: COLORS.green,
     letterSpacing: -0.3,
   },
   settingsBtn: {
@@ -221,9 +267,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  settingsIcon: {
-    fontSize: 17,
   },
   divider: {
     height: 1,
@@ -276,6 +319,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -310,7 +356,7 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
   },
 
-  // Stats
+  // Stats — "Earned" card flips to green to semantically tie to money.
   statsRow: {
     flexDirection: 'row',
     marginHorizontal: 24,
@@ -328,8 +374,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statCardAccent: {
-    backgroundColor: COLORS.amberLight,
-    borderColor: COLORS.amber,
+    backgroundColor: COLORS.greenLight,
+    borderColor: COLORS.green,
   },
   statValue: {
     fontFamily: 'Inter_700Bold',
@@ -338,7 +384,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   statValueAccent: {
-    color: COLORS.amberDark,
+    color: COLORS.green,
   },
   statLabel: {
     fontFamily: 'Inter_500Medium',
@@ -349,7 +395,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   statLabelAccent: {
-    color: COLORS.amber,
+    color: COLORS.green,
   },
 
   // Section headers
@@ -371,6 +417,9 @@ const styles = StyleSheet.create({
     color: COLORS.amberDark,
   },
   addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     paddingVertical: 6,
     paddingHorizontal: 14,
     borderRadius: 999,
@@ -400,19 +449,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
-  myListingEmoji: {
+  thumb: {
     width: 44,
     height: 44,
     borderRadius: 10,
     backgroundColor: COLORS.surfaceSub,
     borderWidth: 1,
     borderColor: COLORS.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: 'hidden',
   },
-  myListingEmojiText: {
-    fontSize: 22,
-  },
+  thumbImg: { width: '100%', height: '100%' },
   myListingInfo: {
     flex: 1,
     gap: 3,
@@ -433,7 +479,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   statusActive: {
-    backgroundColor: '#E4F4ED',
+    backgroundColor: COLORS.greenLight,
   },
   statusInactive: {
     backgroundColor: COLORS.surfaceSub,
@@ -457,10 +503,10 @@ const styles = StyleSheet.create({
   // Account settings
   settingsSectionTitle: {
     fontFamily: 'Inter_600SemiBold',
-    fontSize: 13,
+    fontSize: 12,
     color: COLORS.text3,
     textTransform: 'uppercase',
-    letterSpacing: 0.6,
+    letterSpacing: 0.7,
     paddingHorizontal: 24,
     paddingBottom: 12,
   },
@@ -476,14 +522,17 @@ const styles = StyleSheet.create({
   settingsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 15,
-    paddingHorizontal: 16,
-    gap: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    gap: 12,
   },
-  settingsRowIcon: {
-    fontSize: 18,
-    width: 24,
-    textAlign: 'center',
+  settingsIconTile: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: COLORS.surfaceSub,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   settingsRowLabel: {
     flex: 1,
@@ -501,15 +550,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.text3,
   },
-  settingsRowChevron: {
-    fontSize: 20,
-    color: COLORS.text3,
-    lineHeight: 22,
-  },
   rowDivider: {
     height: 1,
     backgroundColor: COLORS.border,
-    marginLeft: 54,
+    marginLeft: 56,
   },
   logoutBtn: {
     marginHorizontal: 24,
@@ -517,12 +561,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: '#FFD5D5',
+    borderColor: COLORS.redLight,
     alignItems: 'center',
   },
   logoutText: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 14,
-    color: '#D9534F',
+    color: COLORS.red,
   },
 });

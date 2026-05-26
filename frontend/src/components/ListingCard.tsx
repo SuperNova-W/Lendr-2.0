@@ -1,14 +1,15 @@
 import React from 'react';
-import { StyleSheet, Text, View, Pressable } from 'react-native';
+import { StyleSheet, Text, View, Pressable, Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../theme/colors';
 
 interface ListingCardProps {
   item: {
-    emoji: string;
     title: string;
     desc: string;
     price: string;
     tag: string;
+    photoUrl?: string;
   };
   onPress: () => void;
 }
@@ -16,8 +17,12 @@ interface ListingCardProps {
 export const ListingCard: React.FC<ListingCardProps> = ({ item, onPress }) => {
   return (
     <Pressable style={styles.card} onPress={onPress}>
-      <View style={styles.emojiWrapper}>
-        <Text style={styles.emoji}>{item.emoji}</Text>
+      <View style={styles.photoWrapper}>
+        {item.photoUrl ? (
+          <Image source={{ uri: item.photoUrl }} style={styles.photo} />
+        ) : (
+          <Ionicons name="image-outline" size={22} color={COLORS.text3} />
+        )}
       </View>
       <View style={styles.info}>
         <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
@@ -47,7 +52,7 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 14,
   },
-  emojiWrapper: {
+  photoWrapper: {
     width: 56,
     height: 56,
     borderRadius: 12,
@@ -56,8 +61,9 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
-  emoji: { fontSize: 26 },
+  photo: { width: '100%', height: '100%' },
   info: { flex: 1 },
   title: {
     fontFamily: 'Inter_600SemiBold',

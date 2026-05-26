@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, StatusBar } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Pressable, StatusBar, Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../theme/colors';
 
@@ -10,21 +11,25 @@ export const ItemDetailScreen: React.FC<any> = ({ route, navigation }) => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.bg} />
-      
+
       {/* ── Header ── */}
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backIcon}>←</Text>
+          <Ionicons name="chevron-back" size={20} color={COLORS.text1} />
         </Pressable>
         <Text style={styles.headerTitle}>Item Details</Text>
-        <View style={{ width: 40 }} /> {/* Spacer to balance back button */}
+        <View style={{ width: 40 }} />
       </View>
 
       <ScrollView style={styles.screen} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-        
-        {/* ── Image/Emoji ── */}
+
+        {/* ── Hero photo ── */}
         <View style={styles.imageContainer}>
-          <Text style={styles.imageEmoji}>{item.emoji}</Text>
+          {item.photoUrl ? (
+            <Image source={{ uri: item.photoUrl }} style={styles.heroImg} />
+          ) : (
+            <Ionicons name="image-outline" size={64} color={COLORS.text3} />
+          )}
         </View>
 
         {/* ── Info ── */}
@@ -35,17 +40,16 @@ export const ItemDetailScreen: React.FC<any> = ({ route, navigation }) => {
               <Text style={styles.priceText}>{item.price}</Text>
             </View>
           </View>
-          
+
           <Text style={styles.tagText}>{item.tag || 'Item'}</Text>
-          
+
           <View style={styles.divider} />
 
           <Text style={styles.sectionTitle}>Description</Text>
           <Text style={styles.desc}>{item.desc}</Text>
-          
+
           <View style={styles.divider} />
 
-          {/* Dummy info for realism */}
           <Text style={styles.sectionTitle}>Lender Information</Text>
           <View style={styles.lenderCard}>
             <View style={styles.lenderAvatar}>
@@ -53,8 +57,12 @@ export const ItemDetailScreen: React.FC<any> = ({ route, navigation }) => {
             </View>
             <View style={styles.lenderInfo}>
               <Text style={styles.lenderName}>Sarah Johnson</Text>
-              <Text style={styles.lenderStats}>⭐ 4.9 • 14 items lent</Text>
+              <View style={styles.lenderMeta}>
+                <Ionicons name="star" size={12} color="#F5B324" />
+                <Text style={styles.lenderStats}>4.9 · 14 items lent</Text>
+              </View>
             </View>
+            <Ionicons name="shield-checkmark-outline" size={20} color={COLORS.green} />
           </View>
         </View>
       </ScrollView>
@@ -94,10 +102,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backIcon: {
-    fontSize: 20,
-    color: COLORS.text1,
-  },
   headerTitle: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 16,
@@ -112,9 +116,11 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
-  imageEmoji: {
-    fontSize: 100,
+  heroImg: {
+    width: '100%',
+    height: '100%',
   },
   infoSection: {
     paddingHorizontal: 24,
@@ -131,6 +137,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: COLORS.text1,
     lineHeight: 30,
+    letterSpacing: -0.3,
   },
   pricePill: {
     backgroundColor: COLORS.greenLight,
@@ -174,18 +181,20 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     borderRadius: 16,
     padding: 16,
-    gap: 16,
+    gap: 14,
   },
   lenderAvatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
     backgroundColor: COLORS.amberLight,
+    borderWidth: 2,
+    borderColor: COLORS.amber,
     alignItems: 'center',
     justifyContent: 'center',
   },
   lenderAvatarText: {
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Inter_700Bold',
     fontSize: 18,
     color: COLORS.amberDark,
   },
@@ -197,11 +206,16 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: COLORS.text1,
   },
+  lenderMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
   lenderStats: {
     fontFamily: 'Inter_400Regular',
     fontSize: 13,
     color: COLORS.text3,
-    marginTop: 4,
   },
   bottomBar: {
     position: 'absolute',
@@ -222,8 +236,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   borrowBtnText: {
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 16,
     color: '#fff',
+    letterSpacing: 0.1,
   },
 });
