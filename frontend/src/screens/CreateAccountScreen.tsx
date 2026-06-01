@@ -7,18 +7,34 @@ import {
   Pressable,
   ScrollView,
   StatusBar,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../theme/colors';
+import { useAuth } from '../context/AuthContext';
 
 export const CreateAccountScreen: React.FC<any> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const { signInWithGoogle } = useAuth();
   const [username, setUsername] = useState('');
   const [contact, setContact] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  async function handleGoogleSignIn() {
+    setGoogleLoading(true);
+    try {
+      await signInWithGoogle();
+    } catch (err: any) {
+      Alert.alert('Sign in failed', err.message ?? 'Something went wrong');
+    } finally {
+      setGoogleLoading(false);
+    }
+  }
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -94,7 +110,7 @@ export const CreateAccountScreen: React.FC<any> = ({ navigation }) => {
 
         <Pressable
           style={styles.primaryBtn}
-          onPress={() => navigation.navigate('Home')}
+          onPress={handleGoogleSignIn}
         >
           <Text style={styles.primaryBtnText}>Create Account</Text>
         </Pressable>
@@ -106,9 +122,15 @@ export const CreateAccountScreen: React.FC<any> = ({ navigation }) => {
         </View>
 
         <View style={styles.socialButtons}>
-          <Pressable style={styles.socialBtn}>
-            <Ionicons name="logo-google" size={18} color="#EA4335" />
-            <Text style={styles.socialBtnText}>Sign Up with Google</Text>
+          <Pressable style={styles.socialBtn} onPress={handleGoogleSignIn} disabled={googleLoading}>
+            {googleLoading ? (
+              <ActivityIndicator size="small" color={COLORS.amber} />
+            ) : (
+              <>
+                <Ionicons name="logo-google" size={18} color="#EA4335" />
+                <Text style={styles.socialBtnText}>Sign Up with Google</Text>
+              </>
+            )}
           </Pressable>
 
           <Pressable style={styles.socialBtn}>
@@ -117,7 +139,7 @@ export const CreateAccountScreen: React.FC<any> = ({ navigation }) => {
           </Pressable>
         </View>
 
-        <Pressable style={styles.signinRow} onPress={() => navigation.navigate('Home')}>
+        <Pressable style={styles.signinRow} onPress={handleGoogleSignIn}>
           <Text style={styles.signinText}>Already have an account? </Text>
           <Text style={styles.signinLink}>Sign In</Text>
         </Pressable>

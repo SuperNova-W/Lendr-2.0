@@ -2,6 +2,7 @@ import { Router, Response, NextFunction } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { supabase } from '../lib/supabase';
 import { pool } from '../db/pool';
+import { isCollegeEmail } from '../lib/eduEmail';
 
 const router = Router();
 
@@ -22,9 +23,23 @@ router.post('/sync', requireAuth, async (req, res: Response, next: NextFunction)
 
     const { email, user_metadata } = user;
 
+    // College-email gate — accountability requirement. Reject non-academic emails.
+    // We intentionally do NOT delete the auth user here: public.users.id cascades
+    // from auth.users, so deleting could wipe a previously-valid user's data. A
+    // rejected auth user is harmless — they can't pass sync, so they get nothing.
+    if (!isCollegeEmail(email)) {
+      res.status(403).json({
+        error: 'Lendr is only open to students. Please sign in with your college (.edu) email address.',
+        code: 'NOT_COLLEGE_EMAIL',
+      });
+      return;
+    }
+
+    // $1 is reused for both id (UUID) and google_id (TEXT); cast google_id
+    // explicitly so Postgres doesn't error with "inconsistent types" (42P08).
     const { rows } = await pool.query(
       `INSERT INTO users (id, google_id, email, name, avatar_url)
-       VALUES ($1, $1, $2, $3, $4)
+       VALUES ($1, $1::text, $2, $3, $4)
        ON CONFLICT (id) DO UPDATE
          SET name       = EXCLUDED.name,
              avatar_url = EXCLUDED.avatar_url,
@@ -33,7 +48,9 @@ router.post('/sync', requireAuth, async (req, res: Response, next: NextFunction)
       [userId, email, user_metadata?.full_name ?? email, user_metadata?.avatar_url ?? null]
     );
 
-    res.json(rows[0]);
+    const u = rows[0];
+    // "Onboarded" = they've completed the required profile (campus set).
+    res.json({ ...u, onboarded: Boolean(u.campus) });
   } catch (err) { next(err); }
 });
 

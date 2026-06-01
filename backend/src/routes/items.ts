@@ -9,13 +9,14 @@ const router = Router();
 // GET /items?campus=UCLA&category=Tech&available=true
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { campus, category, available } = req.query;
+    const { campus, category, available, owner } = req.query;
     const conditions: string[] = [];
     const values: unknown[]    = [];
 
     if (campus)    { conditions.push(`campus = $${values.push(campus)}`); }
     if (category)  { conditions.push(`category = $${values.push(category)}::item_category`); }
     if (available) { conditions.push(`is_available = $${values.push(available === 'true')}`); }
+    if (owner)     { conditions.push(`owner_id = $${values.push(owner)}`); }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const { rows } = await pool.query(

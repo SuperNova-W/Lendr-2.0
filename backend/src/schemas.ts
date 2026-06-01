@@ -4,7 +4,7 @@ export const createItemSchema = z.object({
   title:         z.string().min(3).max(160),
   description:   z.string().optional(),
   category:      z.enum(['Textbooks','Tech','Dorm','Formal','Sports','Outdoors','Other']),
-  price_per_day: z.number().positive(),
+  price_per_day: z.number().positive().max(9999),
   photos:        z.array(z.string().url()).optional().default([]),
   campus:        z.string().min(1),
 });
@@ -23,7 +23,9 @@ export const updateRequestSchema = z.object({
 });
 
 export const updateUserSchema = z.object({
-  name:   z.string().min(1).max(128).optional(),
-  campus: z.string().optional(),
-  bio:    z.string().max(300).optional(),
+  name:      z.string().min(1).max(128).optional(),
+  campus:    z.string().max(128).optional(),
+  grad_year: z.number().int().min(1950).max(2100).optional(),
+  major:     z.string().max(128).optional(),
+  bio:       z.string().max(300).optional(),
 });

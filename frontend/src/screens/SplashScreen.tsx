@@ -40,8 +40,15 @@ const HINT_DURATION = 500;
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
-export const SplashScreen: React.FC<any> = ({ navigation }) => {
+export const SplashScreen: React.FC<any> = ({ navigation, onDone }) => {
   const insets = useSafeAreaInsets();
+
+  // When used as a launch gate (App.tsx), onDone is provided. When used as a
+  // navigation screen (signed-out flow), fall back to navigating to Onboarding.
+  const finish = () => {
+    if (onDone) onDone();
+    else navigation?.replace('Onboarding');
+  };
 
   // One Animated.Value per element drives a 0→1 progress.
   const tileAnims = useRef(TILES.map(() => new Animated.Value(0))).current;
@@ -98,14 +105,14 @@ export const SplashScreen: React.FC<any> = ({ navigation }) => {
 
     Animated.parallel(animations).start();
 
-    const t = setTimeout(() => navigation.replace('Onboarding'), SPLASH_DURATION);
+    const t = setTimeout(finish, SPLASH_DURATION);
     return () => clearTimeout(t);
   }, []);
 
   return (
     <Pressable
       style={[styles.container, { paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, 32) }]}
-      onPress={() => navigation.replace('Onboarding')}
+      onPress={finish}
     >
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.bg} />
 

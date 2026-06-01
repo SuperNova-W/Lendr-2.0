@@ -106,7 +106,7 @@ export const OnboardingScreen: React.FC<any> = ({ navigation }) => {
 
         <Pressable
           style={styles.secondaryBtn}
-          onPress={() => navigation.navigate('Home')}
+          onPress={() => navigation.navigate('CreateAccount')}
         >
           <Text style={styles.secondaryBtnText}>Already Have an Account</Text>
         </Pressable>

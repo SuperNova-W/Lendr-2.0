@@ -76,7 +76,7 @@ router.get('/incoming', async (req, res: Response, next: NextFunction) => {
 router.patch('/:id', async (req, res: Response, next: NextFunction) => {
   try {
     const { status } = updateRequestSchema.parse(req.body);
-    const userId     = (req as AuthRequest).userId;
+    const userId     = (req as unknown as AuthRequest).userId;
 
     const reqRes = await pool.query('SELECT * FROM requests WHERE id = $1', [req.params.id]);
     if (!reqRes.rows[0]) throw new AppError(404, 'Request not found');

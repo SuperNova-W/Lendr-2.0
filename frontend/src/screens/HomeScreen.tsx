@@ -1,28 +1,52 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, TextInput, ScrollView, Pressable, StatusBar } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, Text, View, ScrollView, Pressable, StatusBar, ActivityIndicator, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../theme/colors';
-import { CATEGORIES, FEATURED, LISTINGS } from '../data/dummyData';
+import { CATEGORIES } from '../data/dummyData';
 import { ListingCard } from '../components/ListingCard';
 import { FeaturedCard } from '../components/FeaturedCard';
 import { BottomNav } from '../components/BottomNav';
+import { getItems, getMyStats, Item, MyStats } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 
 export const HomeScreen: React.FC<any> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const { session } = useAuth();
+  const token = session?.access_token;
+  const userId = session?.user?.id;
   const [activeCategory, setActiveCategory] = useState('All');
   const [activeNav, setActiveNav] = useState('home');
-  const [search, setSearch] = useState('');
+  const [items, setItems] = useState<Item[]>([]);
+  const [stats, setStats] = useState<MyStats | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = LISTINGS.filter(item => {
-    const matchCat = activeCategory === 'All' || item.tag === activeCategory;
-    const matchSearch =
-      item.title.toLowerCase().includes(search.toLowerCase()) ||
-      item.desc.toLowerCase().includes(search.toLowerCase());
-    return matchCat && matchSearch;
-  });
+  // Display name / avatar come straight from the Supabase session
+  const meta = session?.user?.user_metadata ?? {};
+  const fullName: string = meta.full_name ?? meta.name ?? session?.user?.email ?? 'there';
+  const firstName = fullName.split(' ')[0];
+  const avatarUrl: string | null = meta.avatar_url ?? null;
 
-  const showFeatured = search === '' && activeCategory === 'All';
+  useEffect(() => {
+    if (!token || !userId) return;
+    Promise.all([getItems({ available: true }), getMyStats(token, userId)])
+      .then(([itemsRes, statsRes]) => {
+        setItems(itemsRes);
+        setStats(statsRes);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [token, userId]);
+
+  // Featured carousel = the 3 newest listings (API returns newest first)
+  const featured = items.slice(0, 3);
+
+  // Home filters by category only; free-text search lives on the Search screen.
+  const filtered = items.filter(
+    item => activeCategory === 'All' || item.category === activeCategory
+  );
+
+  const showFeatured = activeCategory === 'All';
 
   return (
     <View style={styles.container}>
@@ -35,20 +59,24 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
       >
         {/* ── Header ── */}
         <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>K</Text>
-            </View>
+          <Pressable style={styles.headerLeft} onPress={() => navigation.navigate('Profile')}>
+            {avatarUrl ? (
+              <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+            ) : (
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{firstName.charAt(0).toUpperCase()}</Text>
+              </View>
+            )}
             <View>
-              <Text style={styles.headerGreeting}>Hi, Kayla</Text>
+              <Text style={styles.headerGreeting}>Hi, {firstName}</Text>
               <Text style={styles.headerSub}>Let's go borrowing</Text>
             </View>
-          </View>
+          </Pressable>
           <View style={styles.headerActions}>
-            <Pressable style={styles.iconBtn}>
+            <Pressable style={styles.iconBtn} onPress={() => navigation.navigate('Messages')}>
               <Ionicons name="chatbubble-ellipses-outline" size={18} color={COLORS.text1} />
             </Pressable>
-            <Pressable style={styles.iconBtn}>
+            <Pressable style={styles.iconBtn} onPress={() => navigation.navigate('Notifications')}>
               <Ionicons name="notifications-outline" size={18} color={COLORS.text1} />
             </Pressable>
           </View>
@@ -59,16 +87,16 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
         {/* ── Stats ── */}
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>248</Text>
-            <Text style={styles.statLabel}>Students</Text>
+            <Text style={styles.statValue}>{stats?.listed ?? '—'}</Text>
+            <Text style={styles.statLabel}>Listed</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>90</Text>
-            <Text style={styles.statLabel}>Listings</Text>
+            <Text style={styles.statValue}>{stats ? `$${stats.earned}` : '—'}</Text>
+            <Text style={styles.statLabel}>Earned</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>$12</Text>
-            <Text style={styles.statLabel}>Avg. saved</Text>
+            <Text style={styles.statValue}>{stats?.borrowed ?? '—'}</Text>
+            <Text style={styles.statLabel}>Borrowed</Text>
           </View>
         </View>
 
@@ -76,16 +104,10 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
 
         {/* ── Search ── */}
         <View style={styles.searchWrap}>
-          <View style={styles.searchBar}>
+          <Pressable style={styles.searchBar} onPress={() => navigation.navigate('Search')}>
             <Ionicons name="search" size={16} color={COLORS.text3} style={styles.searchIcon} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search for an item..."
-              placeholderTextColor={COLORS.text3}
-              value={search}
-              onChangeText={setSearch}
-            />
-          </View>
+            <Text style={styles.searchPlaceholder}>Search for an item...</Text>
+          </Pressable>
         </View>
 
         {/* ── Categories ── */}
@@ -112,7 +134,7 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
         </ScrollView>
 
         {/* ── Featured ── */}
-        {showFeatured && (
+        {showFeatured && featured.length > 0 && (
           <View>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Trending on campus</Text>
@@ -124,10 +146,16 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
               contentContainerStyle={styles.featuredScrollContent}
               style={styles.featuredScroll}
             >
-              {FEATURED.map(item => (
+              {featured.map(item => (
                 <FeaturedCard
                   key={item.id}
-                  item={item}
+                  item={{
+                    title: item.title,
+                    desc: item.description ?? '',
+                    price: `$${Number(item.price_per_day)}/day`,
+                    rating: Number(item.owner_rating) > 0 ? Number(item.owner_rating).toFixed(1) : 'New',
+                    photoUrl: item.photos[0] ?? null,
+                  }}
                   onPress={() => navigation.navigate('ItemDetail', { item })}
                 />
               ))}
@@ -146,7 +174,9 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
         </View>
 
         <View style={styles.listings}>
-          {filtered.length === 0 ? (
+          {loading ? (
+            <ActivityIndicator size="large" color={COLORS.amber} style={{ paddingVertical: 48 }} />
+          ) : filtered.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="search-outline" size={32} color={COLORS.text3} />
               <Text style={styles.emptyStateText}>No items found — try a different search.</Text>
@@ -155,7 +185,13 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
             filtered.map(item => (
               <ListingCard
                 key={item.id}
-                item={item}
+                item={{
+                  title: item.title,
+                  desc: item.description ?? '',
+                  price: `$${Number(item.price_per_day)}/day`,
+                  tag: item.category,
+                  photoUrl: item.photos[0] ?? undefined,
+                }}
                 onPress={() => navigation.navigate('ItemDetail', { item })}
               />
             ))
@@ -169,6 +205,8 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
         activeNav={activeNav}
         setActiveNav={(id) => {
           if (id === 'profile') navigation.navigate('Profile');
+          else if (id === 'requests') navigation.navigate('Requests');
+          else if (id === 'browse') navigation.navigate('Search');
           else setActiveNav(id);
         }}
         paddingBottom={insets.bottom}
@@ -295,12 +333,12 @@ const styles = StyleSheet.create({
   searchIcon: {
     marginRight: 10,
   },
-  searchInput: {
+  searchPlaceholder: {
     flex: 1,
     fontFamily: 'Inter_400Regular',
     fontSize: 14,
-    color: COLORS.text1,
-    height: 26,
+    color: COLORS.text3,
+    lineHeight: 26,
   },
   categories: {
     marginBottom: 28,

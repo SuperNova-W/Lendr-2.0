@@ -1,0 +1,40 @@
+service: lendr-backend
+frameworkVersion: '3'
+
+# Load backend/.env so ${env:...} below resolves to its values
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+  timeout: 29        # API Gateway HTTP API max is 29s
+  memorySize: 256
+  environment:
+    DATABASE_URL: ${env:DATABASE_URL}
+    SUPABASE_URL: ${env:SUPABASE_URL}
+    SUPABASE_SERVICE_ROLE_KEY: ${env:SUPABASE_SERVICE_ROLE_KEY}
+    # Extra allowed email domains/suffixes beyond the built-in .edu list (comma-separated).
+    # Used for dev access + international schools. REMOVE non-academic domains before prod.
+    EDU_EMAIL_SUFFIXES: ${env:EDU_EMAIL_SUFFIXES, ''}
+
+functions:
+  api:
+    handler: dist/lambda.handler
+    events:
+      - httpApi:
+          path: /
+          method: ANY
+      - httpApi:
+          path: /{proxy+}
+          method: ANY
+
+package:
+  patterns:
+    - '!src/**'
+    - '!*.ts'
+    - '!tsconfig.json'
+    - '!.env*'
+    - '!Dockerfile'
+    - '!.dockerignore'
+    - '!README*'

@@ -1,53 +1,34 @@
-import React from 'react';
-import { StyleSheet, Text, View, ScrollView, Pressable, StatusBar, Image } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  Pressable,
+  StatusBar,
+  Image,
+  ActivityIndicator,
+  RefreshControl,
+  Modal,
+  TextInput,
+  Alert,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../theme/colors';
 import { BottomNav } from '../components/BottomNav';
-
-const MY_LISTINGS = [
-  {
-    id: 4,
-    title: 'TI-84 Plus CE',
-    price: '$3/day',
-    tag: 'Tech',
-    active: true,
-    photoUrl: 'https://images.unsplash.com/photo-1564939558297-fc396f18e5c7?w=200&q=80&auto=format&fit=crop',
-  },
-  {
-    id: 5,
-    title: 'Suit Jacket (M)',
-    price: '$8/day',
-    tag: 'Formal',
-    active: true,
-    photoUrl: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=200&q=80&auto=format&fit=crop',
-  },
-  {
-    id: 6,
-    title: 'Organic Chem Textbook',
-    price: '$4/day',
-    tag: 'Textbooks',
-    active: false,
-    photoUrl: 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?w=200&q=80&auto=format&fit=crop',
-  },
-];
-
-const RECENT_BORROWS = [
-  {
-    id: 1,
-    title: 'Campus Bike',
-    price: '$5/day',
-    date: 'May 12–15',
-    photoUrl: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=200&q=80&auto=format&fit=crop',
-  },
-  {
-    id: 2,
-    title: 'Sony A7 III',
-    price: '$22/day',
-    date: 'Apr 28–29',
-    photoUrl: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=200&q=80&auto=format&fit=crop',
-  },
-];
+import { useAuth } from '../context/AuthContext';
+import {
+  getMe,
+  updateMe,
+  getItems,
+  getMyRequests,
+  getMyStats,
+  User,
+  Item,
+  MyRequest,
+} from '../lib/api';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -58,8 +39,106 @@ const SETTINGS_ROWS: { icon: IoniconsName; label: string; detail?: string }[] = 
   { icon: 'document-text-outline', label: 'Terms & Privacy' },
 ];
 
+const fmtDateRange = (start: string, end: string) => {
+  const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+  return `${new Date(start).toLocaleDateString(undefined, opts)} – ${new Date(end).toLocaleDateString(undefined, opts)}`;
+};
+
 export const ProfileScreen: React.FC<any> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const { session, signOut } = useAuth();
+  const token = session?.access_token;
+
+  const [me, setMe] = useState<User | null>(null);
+  const [listings, setListings] = useState<Item[]>([]);
+  const [borrows, setBorrows] = useState<MyRequest[]>([]);
+  const [earned, setEarned] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Edit profile modal
+  const [editOpen, setEditOpen] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editCampus, setEditCampus] = useState('');
+  const [editBio, setEditBio] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!token) return;
+    try {
+      const meRes = await getMe(token);
+      const [items, mine, computed] = await Promise.all([
+        getItems({ owner: meRes.id }),
+        getMyRequests(token),
+        getMyStats(token, meRes.id),
+      ]);
+      setMe(meRes);
+      setListings(items);
+      setBorrows(mine);
+      setEarned(computed.earned);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [token]);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    load();
+  };
+
+  function openEdit() {
+    setEditName(me?.name ?? '');
+    setEditCampus(me?.campus ?? '');
+    setEditBio(me?.bio ?? '');
+    setEditOpen(true);
+  }
+
+  async function saveProfile() {
+    if (!token) return;
+    setSaving(true);
+    try {
+      const updated = await updateMe(token, {
+        name: editName.trim(),
+        campus: editCampus.trim(),
+        bio: editBio.trim(),
+      });
+      setMe(updated);
+      setEditOpen(false);
+    } catch (err: any) {
+      Alert.alert('Could not save', err.message ?? 'Something went wrong');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function confirmLogout() {
+    Alert.alert('Log out?', 'You can sign back in anytime.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Log Out', style: 'destructive', onPress: () => signOut() },
+    ]);
+  }
+
+  const name = me?.name ?? 'there';
+  const initial = name.charAt(0).toUpperCase();
+  const avatarUrl = me?.avatar_url ?? null;
+  const rating = Number(me?.rating_avg ?? 0);
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color={COLORS.amber} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -69,6 +148,7 @@ export const ProfileScreen: React.FC<any> = ({ navigation }) => {
         style={styles.screen}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 110 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.amber} />}
       >
         {/* ── Header ── */}
         <View style={styles.header}>
@@ -85,17 +165,23 @@ export const ProfileScreen: React.FC<any> = ({ navigation }) => {
 
         {/* ── Profile Hero ── */}
         <View style={styles.profileHero}>
-          <View style={styles.avatarLarge}>
-            <Text style={styles.avatarLargeText}>K</Text>
-          </View>
+          {avatarUrl ? (
+            <Image source={{ uri: avatarUrl }} style={styles.avatarLarge} />
+          ) : (
+            <View style={styles.avatarLarge}>
+              <Text style={styles.avatarLargeText}>{initial}</Text>
+            </View>
+          )}
 
           <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>Kayla Chen</Text>
-            <Text style={styles.profileSub}>UCLA · Junior</Text>
+            <Text style={styles.profileName}>{name}</Text>
+            <Text style={styles.profileSub}>{me?.campus || 'Add your campus'}</Text>
             <View style={styles.badgeRow}>
               <View style={styles.badge}>
                 <Ionicons name="star" size={11} color="#F5B324" />
-                <Text style={styles.badgeText}>4.9</Text>
+                <Text style={styles.badgeText}>
+                  {rating > 0 ? rating.toFixed(1) : 'New'}
+                </Text>
               </View>
               <View style={styles.badge}>
                 <Ionicons name="checkmark" size={11} color={COLORS.green} />
@@ -104,29 +190,27 @@ export const ProfileScreen: React.FC<any> = ({ navigation }) => {
             </View>
           </View>
 
-          <Pressable style={styles.editBtn}>
+          <Pressable style={styles.editBtn} onPress={openEdit}>
             <Text style={styles.editBtnText}>Edit</Text>
           </Pressable>
         </View>
 
-        <Text style={styles.profileBio}>
-          Lending stuff so we can all stop overpaying on campus.
-        </Text>
+        {me?.bio ? <Text style={styles.profileBio}>{me.bio}</Text> : null}
 
         <View style={styles.divider} />
 
         {/* ── Stats ── */}
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>3</Text>
+            <Text style={styles.statValue}>{listings.length}</Text>
             <Text style={styles.statLabel}>Listed</Text>
           </View>
           <View style={[styles.statCard, styles.statCardAccent]}>
-            <Text style={[styles.statValue, styles.statValueAccent]}>$47</Text>
+            <Text style={[styles.statValue, styles.statValueAccent]}>${earned}</Text>
             <Text style={[styles.statLabel, styles.statLabelAccent]}>Earned</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>12</Text>
+            <Text style={styles.statValue}>{borrows.length}</Text>
             <Text style={styles.statLabel}>Borrowed</Text>
           </View>
         </View>
@@ -136,59 +220,82 @@ export const ProfileScreen: React.FC<any> = ({ navigation }) => {
         {/* ── My Listings ── */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>My Listings</Text>
-          <Pressable style={styles.addBtn}>
+          <Pressable style={styles.addBtn} onPress={() => navigation.navigate('AddItem')}>
             <Ionicons name="add" size={14} color="#fff" />
             <Text style={styles.addBtnText}>Add Item</Text>
           </Pressable>
         </View>
 
-        <View style={styles.listingsStack}>
-          {MY_LISTINGS.map((item, i) => (
-            <View
-              key={item.id}
-              style={[styles.myListingCard, i === MY_LISTINGS.length - 1 && { borderBottomWidth: 0 }]}
-            >
-              <View style={styles.thumb}>
-                <Image source={{ uri: item.photoUrl }} style={styles.thumbImg} />
-              </View>
-              <View style={styles.myListingInfo}>
-                <Text style={styles.myListingTitle} numberOfLines={1}>{item.title}</Text>
-                <Text style={styles.myListingMeta}>{item.tag} · {item.price}</Text>
-              </View>
-              <View style={[styles.statusPill, item.active ? styles.statusActive : styles.statusInactive]}>
-                <Text style={[styles.statusText, item.active ? styles.statusTextActive : styles.statusTextInactive]}>
-                  {item.active ? 'Active' : 'Paused'}
-                </Text>
-              </View>
-            </View>
-          ))}
-        </View>
+        {listings.length === 0 ? (
+          <Text style={styles.emptyRow}>You haven't listed any items yet.</Text>
+        ) : (
+          <View style={styles.listingsStack}>
+            {listings.map((item, i) => (
+              <Pressable
+                key={item.id}
+                style={[styles.myListingCard, i === listings.length - 1 && { borderBottomWidth: 0 }]}
+                onPress={() => navigation.navigate('ItemDetail', { item })}
+              >
+                <View style={styles.thumb}>
+                  {item.photos[0] ? (
+                    <Image source={{ uri: item.photos[0] }} style={styles.thumbImg} />
+                  ) : (
+                    <Ionicons name="image-outline" size={18} color={COLORS.text3} />
+                  )}
+                </View>
+                <View style={styles.myListingInfo}>
+                  <Text style={styles.myListingTitle} numberOfLines={1}>{item.title}</Text>
+                  <Text style={styles.myListingMeta}>{item.category} · ${Number(item.price_per_day)}/day</Text>
+                </View>
+                <View style={[styles.statusPill, item.is_available ? styles.statusActive : styles.statusInactive]}>
+                  <Text style={[styles.statusText, item.is_available ? styles.statusTextActive : styles.statusTextInactive]}>
+                    {item.is_available ? 'Active' : 'Out'}
+                  </Text>
+                </View>
+              </Pressable>
+            ))}
+          </View>
+        )}
 
         <View style={styles.divider} />
 
         {/* ── Recent Borrows ── */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recent Borrows</Text>
-          <Text style={styles.sectionLink}>See all</Text>
+          <Pressable onPress={() => navigation.navigate('Requests')}>
+            <Text style={styles.sectionLink}>See all</Text>
+          </Pressable>
         </View>
 
-        <View style={styles.listingsStack}>
-          {RECENT_BORROWS.map((item, i) => (
-            <View
-              key={item.id}
-              style={[styles.myListingCard, i === RECENT_BORROWS.length - 1 && { borderBottomWidth: 0 }]}
-            >
-              <View style={styles.thumb}>
-                <Image source={{ uri: item.photoUrl }} style={styles.thumbImg} />
+        {borrows.length === 0 ? (
+          <Text style={styles.emptyRow}>No borrow history yet.</Text>
+        ) : (
+          <View style={styles.listingsStack}>
+            {borrows.slice(0, 4).map((req, i) => (
+              <View
+                key={req.id}
+                style={[styles.myListingCard, i === Math.min(borrows.length, 4) - 1 && { borderBottomWidth: 0 }]}
+              >
+                <View style={styles.thumb}>
+                  {req.item_photos?.[0] ? (
+                    <Image source={{ uri: req.item_photos[0] }} style={styles.thumbImg} />
+                  ) : (
+                    <Ionicons name="image-outline" size={18} color={COLORS.text3} />
+                  )}
+                </View>
+                <View style={styles.myListingInfo}>
+                  <Text style={styles.myListingTitle} numberOfLines={1}>{req.item_title}</Text>
+                  <Text style={styles.myListingMeta}>
+                    {fmtDateRange(req.start_date, req.end_date)} · ${Number(req.total_price)}
+                  </Text>
+                </View>
+                <View style={[styles.statusPill, styles.statusInactive]}>
+                  <Text style={[styles.statusText, styles.statusTextInactive]}>{req.status}</Text>
+                </View>
               </View>
-              <View style={styles.myListingInfo}>
-                <Text style={styles.myListingTitle} numberOfLines={1}>{item.title}</Text>
-                <Text style={styles.myListingMeta}>{item.date} · {item.price}</Text>
-              </View>
-              <Text style={styles.reviewLink}>Review</Text>
-            </View>
-          ))}
-        </View>
+            ))}
+          </View>
+        )}
 
         <View style={styles.divider} />
 
@@ -213,15 +320,69 @@ export const ProfileScreen: React.FC<any> = ({ navigation }) => {
           ))}
         </View>
 
-        <Pressable style={styles.logoutBtn}>
+        <Pressable style={styles.logoutBtn} onPress={confirmLogout}>
           <Text style={styles.logoutText}>Log Out</Text>
         </Pressable>
       </ScrollView>
+
+      {/* ── Edit profile modal ── */}
+      <Modal visible={editOpen} animationType="slide" transparent onRequestClose={() => setEditOpen(false)}>
+        <Pressable style={styles.sheetBackdrop} onPress={() => setEditOpen(false)} />
+        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 20) }]}>
+          <View style={styles.sheetHandle} />
+          <View style={styles.sheetHeader}>
+            <Text style={styles.sheetTitle}>Edit Profile</Text>
+            <Pressable onPress={() => setEditOpen(false)} hitSlop={10}>
+              <Ionicons name="close" size={22} color={COLORS.text2} />
+            </Pressable>
+          </View>
+
+          <Text style={styles.fieldLabel}>Name</Text>
+          <TextInput
+            style={styles.input}
+            value={editName}
+            onChangeText={setEditName}
+            placeholder="Your name"
+            placeholderTextColor={COLORS.text3}
+            maxLength={128}
+          />
+
+          <Text style={styles.fieldLabel}>Campus</Text>
+          <TextInput
+            style={styles.input}
+            value={editCampus}
+            onChangeText={setEditCampus}
+            placeholder="e.g. UCLA"
+            placeholderTextColor={COLORS.text3}
+          />
+
+          <Text style={styles.fieldLabel}>Bio</Text>
+          <TextInput
+            style={[styles.input, styles.inputMultiline]}
+            value={editBio}
+            onChangeText={setEditBio}
+            placeholder="Tell others a bit about you…"
+            placeholderTextColor={COLORS.text3}
+            multiline
+            maxLength={300}
+          />
+
+          <Pressable
+            style={[styles.saveBtn, (saving || !editName.trim()) && { opacity: 0.5 }]}
+            onPress={saveProfile}
+            disabled={saving || !editName.trim()}
+          >
+            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Save Changes</Text>}
+          </Pressable>
+        </View>
+      </Modal>
 
       <BottomNav
         activeNav="profile"
         setActiveNav={(id) => {
           if (id === 'home') navigation.navigate('Home');
+          else if (id === 'requests') navigation.navigate('Requests');
+          else if (id === 'browse') navigation.navigate('Search');
         }}
         paddingBottom={insets.bottom}
       />
@@ -498,6 +659,81 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_500Medium',
     fontSize: 13,
     color: COLORS.amberDark,
+  },
+  emptyRow: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 13,
+    color: COLORS.text3,
+    marginHorizontal: 24,
+    marginBottom: 28,
+  },
+
+  // Edit profile sheet
+  sheetBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  sheet: {
+    backgroundColor: COLORS.bg,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+  },
+  sheetHandle: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.border,
+    marginBottom: 16,
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  sheetTitle: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 20,
+    color: COLORS.text1,
+    letterSpacing: -0.3,
+  },
+  fieldLabel: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 14,
+    color: COLORS.text1,
+    marginBottom: 8,
+    marginTop: 12,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 14,
+    color: COLORS.text1,
+    backgroundColor: COLORS.surface,
+  },
+  inputMultiline: {
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  saveBtn: {
+    backgroundColor: COLORS.amber,
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 24,
+  },
+  saveBtnText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 16,
+    color: '#fff',
   },
 
   // Account settings
