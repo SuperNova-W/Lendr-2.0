@@ -8,6 +8,12 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  # The Supabase URL + anon key in src/lib/supabase.ts are public by design
+  # (client apps must ship them; RLS protects the data). Tell Netlify's secret
+  # scanner these specific values are expected in the bundle.
+  SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL"
+  # Lockfiles never hold real secrets; skip the false-positive PORT match there.
+  SECRETS_SCAN_OMIT_PATHS = "package-lock.json"
 
 # SPA fallback: every route serves index.html so client-side navigation works
 # on hard refresh / deep links. (Also emitted via frontend/public/_redirects.)
