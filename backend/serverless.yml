@@ -6,7 +6,7 @@ useDotenv: true
 
 provider:
   name: aws
-  runtime: nodejs20.x
+  runtime: nodejs22.x
   region: us-east-1
   timeout: 29        # API Gateway HTTP API max is 29s
   memorySize: 256

@@ -22,6 +22,7 @@ import { MessagesScreen } from './src/screens/MessagesScreen';
 import { NotificationsScreen } from './src/screens/NotificationsScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
+import { LegalScreen } from './src/screens/LegalScreen';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 
 const Stack = createNativeStackNavigator();
@@ -48,12 +49,14 @@ function Navigator() {
           <Stack.Screen name="Notifications" component={NotificationsScreen} />
           <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen name="Legal" component={LegalScreen} />
         </>
       ) : (
         // Not signed in — show auth flow (splash already shown by the launch gate)
         <>
           <Stack.Screen name="Onboarding" component={OnboardingScreen} />
           <Stack.Screen name="CreateAccount" component={CreateAccountScreen} />
+          <Stack.Screen name="Legal" component={LegalScreen} />
         </>
       )}
     </Stack.Navigator>

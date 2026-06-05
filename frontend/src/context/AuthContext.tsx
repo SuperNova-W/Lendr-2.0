@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import { Session } from '@supabase/supabase-js';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
@@ -88,6 +88,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function signInWithGoogle() {
     console.log('OAuth redirectTo (add this to Supabase allow-list):', redirectTo);
+
+    // On web, let supabase redirect the whole page to Google; the OAuth callback
+    // lands back on our origin with ?code=... and supabase-js (detectSessionInUrl)
+    // exchanges it on reload, firing onAuthStateChange.
+    if (Platform.OS === 'web') {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo },
+      });
+      if (error) throw error;
+      return;
+    }
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',

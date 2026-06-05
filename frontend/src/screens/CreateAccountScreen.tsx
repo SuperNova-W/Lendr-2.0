@@ -2,28 +2,38 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   StyleSheet,
   Pressable,
-  ScrollView,
   StatusBar,
   ActivityIndicator,
   Alert,
+  Image,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { COLORS } from '../theme/colors';
+import { SPLASH_PHOTOS } from '../data/dummyData';
 import { useAuth } from '../context/AuthContext';
+
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
+
+const FEATURES: { icon: IoniconsName; text: string }[] = [
+  { icon: 'pricetags-outline', text: 'Borrow gear, books & tech for less' },
+  { icon: 'people-outline',    text: 'Verified students on your campus' },
+  { icon: 'flash-outline',     text: 'List something in under a minute' },
+];
 
 export const CreateAccountScreen: React.FC<any> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const { signInWithGoogle } = useAuth();
-  const [username, setUsername] = useState('');
-  const [contact, setContact] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [focusedField, setFocusedField] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Hero collage sizing — two columns that fill the width with a gutter.
+  const gutter = 12;
+  const colW = (width - 48 - gutter) / 2;
 
   async function handleGoogleSignIn() {
     setGoogleLoading(true);
@@ -37,113 +47,90 @@ export const CreateAccountScreen: React.FC<any> = ({ navigation }) => {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scroll, { paddingBottom: Math.max(insets.bottom, 32) }]}
-        keyboardShouldPersistTaps="handled"
+      {/* ── Hero collage ── */}
+      <Animated.View
+        entering={FadeIn.duration(600)}
+        style={[styles.hero, { paddingTop: insets.top }]}
       >
-        <View style={styles.titleBlock}>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Start borrowing with your new account</Text>
+        <View style={[styles.heroCol, { width: colW }]}>
+          <Image source={{ uri: SPLASH_PHOTOS[0] }} style={[styles.heroImg, { height: 160 }]} />
+          <Image source={{ uri: SPLASH_PHOTOS[2] }} style={[styles.heroImg, { height: 120 }]} />
+          <Image source={{ uri: SPLASH_PHOTOS[4] }} style={[styles.heroImg, { height: 140 }]} />
+        </View>
+        <View style={[styles.heroCol, { width: colW, marginTop: 28 }]}>
+          <Image source={{ uri: SPLASH_PHOTOS[1] }} style={[styles.heroImg, { height: 130 }]} />
+          <Image source={{ uri: SPLASH_PHOTOS[3] }} style={[styles.heroImg, { height: 160 }]} />
+          <Image source={{ uri: SPLASH_PHOTOS[5] }} style={[styles.heroImg, { height: 120 }]} />
+        </View>
+      </Animated.View>
+
+      {/* ── Bottom sheet ── */}
+      <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 24) }]}>
+        <Animated.View entering={FadeInUp.delay(150).duration(500)} style={styles.brandRow}>
+          <Text style={styles.logo}>Lendr</Text>
+          <Text style={styles.logoDot}>.</Text>
+        </Animated.View>
+
+        <Animated.Text entering={FadeInUp.delay(220).duration(500)} style={styles.headline}>
+          The campus marketplace for borrowing.
+        </Animated.Text>
+
+        {/* Feature highlights */}
+        <View style={styles.features}>
+          {FEATURES.map((f, i) => (
+            <Animated.View
+              key={f.text}
+              entering={FadeInUp.delay(300 + i * 80).duration(450)}
+              style={styles.featureRow}
+            >
+              <View style={styles.featureIcon}>
+                <Ionicons name={f.icon} size={16} color={COLORS.amber} />
+              </View>
+              <Text style={styles.featureText}>{f.text}</Text>
+            </Animated.View>
+          ))}
         </View>
 
-        <View style={styles.form}>
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Username</Text>
-            <View style={[styles.inputWrap, focusedField === 'username' && styles.inputFocused]}>
-              <TextInput
-                style={styles.input}
-                placeholder="Create your username"
-                placeholderTextColor="#C4C4D4"
-                value={username}
-                onChangeText={setUsername}
-                autoCapitalize="none"
-                onFocus={() => setFocusedField('username')}
-                onBlur={() => setFocusedField(null)}
-              />
-            </View>
-          </View>
-
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Email or Phone Number</Text>
-            <View style={[styles.inputWrap, focusedField === 'contact' && styles.inputFocused]}>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your email or phone number"
-                placeholderTextColor="#C4C4D4"
-                value={contact}
-                onChangeText={setContact}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                onFocus={() => setFocusedField('contact')}
-                onBlur={() => setFocusedField(null)}
-              />
-            </View>
-          </View>
-
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Password</Text>
-            <View style={[styles.inputWrap, focusedField === 'password' && styles.inputFocused]}>
-              <TextInput
-                style={styles.input}
-                placeholder="Create your password"
-                placeholderTextColor="#C4C4D4"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                onFocus={() => setFocusedField('password')}
-                onBlur={() => setFocusedField(null)}
-              />
-              <Pressable onPress={() => setShowPassword(v => !v)} style={styles.eyeBtn}>
-                <Ionicons
-                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                  size={18}
-                  color={COLORS.text2}
-                />
-              </Pressable>
-            </View>
-          </View>
-        </View>
-
-        <Pressable
-          style={styles.primaryBtn}
-          onPress={handleGoogleSignIn}
-        >
-          <Text style={styles.primaryBtnText}>Create Account</Text>
-        </Pressable>
-
-        <View style={styles.dividerRow}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>Or using other method</Text>
-          <View style={styles.dividerLine} />
-        </View>
-
-        <View style={styles.socialButtons}>
-          <Pressable style={styles.socialBtn} onPress={handleGoogleSignIn} disabled={googleLoading}>
+        {/* CTA */}
+        <Animated.View entering={FadeInDown.delay(560).duration(500)}>
+          <Pressable
+            style={({ pressed }) => [styles.googleBtn, pressed && styles.googleBtnPressed]}
+            onPress={handleGoogleSignIn}
+            disabled={googleLoading}
+          >
             {googleLoading ? (
-              <ActivityIndicator size="small" color={COLORS.amber} />
+              <ActivityIndicator size="small" color="#fff" />
             ) : (
               <>
-                <Ionicons name="logo-google" size={18} color="#EA4335" />
-                <Text style={styles.socialBtnText}>Sign Up with Google</Text>
+                <View style={styles.googleGlyph}>
+                  <Ionicons name="logo-google" size={16} color={COLORS.text1} />
+                </View>
+                <Text style={styles.googleBtnText}>Continue with Google</Text>
               </>
             )}
           </Pressable>
 
-          <Pressable style={styles.socialBtn}>
-            <Ionicons name="logo-apple" size={18} color={COLORS.text1} />
-            <Text style={styles.socialBtnText}>Sign Up with Apple</Text>
-          </Pressable>
-        </View>
+          <View style={styles.eduRow}>
+            <Ionicons name="shield-checkmark" size={13} color={COLORS.green} />
+            <Text style={styles.eduText}>Students only · verified by your .edu email</Text>
+          </View>
 
-        <Pressable style={styles.signinRow} onPress={handleGoogleSignIn}>
-          <Text style={styles.signinText}>Already have an account? </Text>
-          <Text style={styles.signinLink}>Sign In</Text>
-        </Pressable>
-      </ScrollView>
+          <Text style={styles.legal}>
+            By continuing you agree to our{' '}
+            <Text style={styles.legalLink} onPress={() => navigation.navigate('Legal', { kind: 'terms' })}>
+              Terms
+            </Text>{' '}
+            and{' '}
+            <Text style={styles.legalLink} onPress={() => navigation.navigate('Legal', { kind: 'privacy' })}>
+              Privacy Policy
+            </Text>
+            .
+          </Text>
+        </Animated.View>
+      </View>
     </View>
   );
 };
@@ -153,129 +140,147 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  scroll: {
-    paddingHorizontal: 28,
-    paddingTop: 32,
-  },
 
-  titleBlock: {
-    marginBottom: 36,
-  },
-  title: {
-    fontFamily: 'Inter_700Bold',
-    fontSize: 28,
-    color: COLORS.inkOnboarding1,
-    letterSpacing: -0.5,
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 14,
-    color: COLORS.inkOnboarding3,
-  },
-
-  form: {
-    gap: 20,
-    marginBottom: 32,
-  },
-  fieldGroup: {
-    gap: 8,
-  },
-  fieldLabel: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 14,
-    color: COLORS.inkOnboarding1,
-  },
-  inputWrap: {
+  // Hero
+  hero: {
     flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: COLORS.borderInput,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    backgroundColor: COLORS.surfaceInput,
-    gap: 10,
+    justifyContent: 'center',
+    gap: 12,
+    paddingHorizontal: 24,
   },
-  inputFocused: {
-    borderColor: COLORS.amber,
-    backgroundColor: '#FFFFFF',
+  heroCol: {
+    gap: 12,
   },
-  input: {
-    flex: 1,
-    fontFamily: 'Inter_400Regular',
-    fontSize: 14,
-    color: COLORS.inkOnboarding1,
-  },
-  eyeBtn: {
-    padding: 2,
+  heroImg: {
+    width: '100%',
+    borderRadius: 18,
+    backgroundColor: COLORS.surfaceSub,
   },
 
-  primaryBtn: {
-    backgroundColor: COLORS.amber,
-    borderRadius: 999,
-    paddingVertical: 16,
-    alignItems: 'center',
+  // Sheet
+  sheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: 28,
+    paddingTop: 28,
+    shadowColor: '#0F1115',
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 20,
+  },
+
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  logo: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 34,
+    color: COLORS.text1,
+    letterSpacing: -1.2,
+  },
+  logoDot: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 34,
+    color: COLORS.green,
+  },
+  headline: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 22,
+    lineHeight: 29,
+    letterSpacing: -0.5,
+    color: COLORS.inkOnboarding1,
+    marginTop: 6,
+    marginBottom: 22,
+  },
+
+  features: {
+    gap: 14,
     marginBottom: 28,
   },
-  primaryBtnText: {
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  featureIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: COLORS.amberLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featureText: {
+    flex: 1,
+    fontFamily: 'Inter_500Medium',
+    fontSize: 14.5,
+    color: COLORS.text2,
+  },
+
+  googleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: COLORS.amber,
+    borderRadius: 999,
+    paddingVertical: 17,
+    shadowColor: COLORS.amber,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22,
+    shadowRadius: 14,
+    elevation: 6,
+  },
+  googleBtnPressed: {
+    transform: [{ scale: 0.985 }],
+    shadowOpacity: 0.12,
+  },
+  googleGlyph: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  googleBtnText: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 16,
     color: '#FFFFFF',
     letterSpacing: 0.1,
   },
 
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 20,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: COLORS.borderInput,
-  },
-  dividerText: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 13,
-    color: COLORS.inkOnboarding3,
-  },
-
-  socialButtons: {
-    gap: 12,
-    marginBottom: 32,
-  },
-  socialBtn: {
+  eduRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: COLORS.borderInput,
-    borderRadius: 12,
-    paddingVertical: 14,
-    gap: 10,
-    backgroundColor: '#FFFFFF',
+    gap: 6,
+    marginTop: 16,
   },
-  socialBtnText: {
+  eduText: {
     fontFamily: 'Inter_500Medium',
-    fontSize: 15,
-    color: COLORS.inkOnboarding1,
+    fontSize: 12.5,
+    color: COLORS.text3,
   },
 
-  signinRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  signinText: {
+  legal: {
     fontFamily: 'Inter_400Regular',
-    fontSize: 14,
+    fontSize: 12,
     color: COLORS.inkOnboarding3,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginTop: 14,
+    paddingHorizontal: 16,
   },
-  signinLink: {
+  legalLink: {
     fontFamily: 'Inter_600SemiBold',
-    fontSize: 14,
     color: COLORS.amber,
   },
 });

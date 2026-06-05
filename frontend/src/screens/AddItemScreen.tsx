@@ -16,6 +16,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import { COLORS } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
 import { createItem, uploadPhoto, getMe } from '../lib/api';
@@ -34,7 +35,30 @@ export const AddItemScreen: React.FC<any> = ({ navigation }) => {
   const [category, setCategory] = useState<string>('Tech');
   const [price, setPrice] = useState('');
   const [campus, setCampus] = useState('');
+  const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [locLoading, setLocLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Tag the item's pickup location with the device GPS (opt-in).
+  async function captureLocation() {
+    setLocLoading(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Location off',
+          'Lendr only uses your location to tag where this item is available, so borrowers can filter by distance. You can still list without it.'
+        );
+        return;
+      }
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      setCoords({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+    } catch {
+      Alert.alert('Could not get location', 'Please try again.');
+    } finally {
+      setLocLoading(false);
+    }
+  }
 
   // Prefill campus from the user's profile
   useEffect(() => {
@@ -98,6 +122,8 @@ export const AddItemScreen: React.FC<any> = ({ navigation }) => {
         price_per_day: Number(price),
         photos: urls,
         campus: campus.trim(),
+        latitude: coords?.latitude,
+        longitude: coords?.longitude,
       });
 
       Alert.alert('Listed!', `"${title.trim()}" is now available to borrow.`, [
@@ -204,6 +230,28 @@ export const AddItemScreen: React.FC<any> = ({ navigation }) => {
             placeholder="e.g. UCLA"
             placeholderTextColor={COLORS.text3}
           />
+
+          {/* Location tag */}
+          <Text style={styles.label}>Pickup location <Text style={styles.optional}>(optional)</Text></Text>
+          <Pressable style={styles.locRow} onPress={captureLocation} disabled={locLoading}>
+            <Ionicons
+              name={coords ? 'checkmark-circle' : 'location-outline'}
+              size={20}
+              color={coords ? COLORS.green : COLORS.text2}
+            />
+            <Text style={[styles.locText, coords && { color: COLORS.text1 }]}>
+              {locLoading ? 'Getting location…' : coords ? 'Location tagged' : 'Use my current location'}
+            </Text>
+            {locLoading && <ActivityIndicator size="small" color={COLORS.text3} />}
+            {coords && !locLoading && (
+              <Pressable onPress={() => setCoords(null)} hitSlop={8}>
+                <Ionicons name="close-circle" size={18} color={COLORS.text3} />
+              </Pressable>
+            )}
+          </Pressable>
+          <Text style={styles.locHelp}>
+            Helps nearby students find your item. Only used for distance filtering — never shared.
+          </Text>
 
           {/* Description */}
           <Text style={styles.label}>Description</Text>
@@ -377,6 +425,36 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_400Regular',
     fontSize: 14,
     color: COLORS.text3,
+  },
+
+  optional: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 13,
+    color: COLORS.text3,
+  },
+  locRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    backgroundColor: COLORS.surface,
+  },
+  locText: {
+    flex: 1,
+    fontFamily: 'Inter_500Medium',
+    fontSize: 14,
+    color: COLORS.text2,
+  },
+  locHelp: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 12,
+    color: COLORS.text3,
+    marginTop: 8,
+    lineHeight: 17,
   },
 
   bottomBar: {

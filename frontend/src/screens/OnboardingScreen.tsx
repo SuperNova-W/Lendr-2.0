@@ -101,14 +101,7 @@ export const OnboardingScreen: React.FC<any> = ({ navigation }) => {
           style={styles.primaryBtn}
           onPress={() => navigation.navigate('CreateAccount')}
         >
-          <Text style={styles.primaryBtnText}>Create Account</Text>
-        </Pressable>
-
-        <Pressable
-          style={styles.secondaryBtn}
-          onPress={() => navigation.navigate('CreateAccount')}
-        >
-          <Text style={styles.secondaryBtnText}>Already Have an Account</Text>
+          <Text style={styles.primaryBtnText}>Get Started</Text>
         </Pressable>
       </View>
     </View>
@@ -211,14 +204,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#FFFFFF',
     letterSpacing: 0.1,
-  },
-  secondaryBtn: {
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  secondaryBtnText: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 14,
-    color: COLORS.amber,
   },
 });

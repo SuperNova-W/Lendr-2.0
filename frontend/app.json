@@ -26,7 +26,9 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single"
     },
     "plugins": [
       "expo-font",
@@ -35,6 +37,12 @@
         "expo-image-picker",
         {
           "photosPermission": "Allow Lendr to access your photos so you can add them to item listings."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Lendr uses your location only to filter listings by distance and to tag where an item is available. It is never shared with other users."
         }
       ]
     ]

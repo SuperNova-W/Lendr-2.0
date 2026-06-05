@@ -22,6 +22,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     throw new ApiError(res.status, body.error ?? `Request failed: ${res.status}`, body.code);
   }
 
+  // 204 No Content (e.g. DELETE) has no body to parse.
+  if (res.status === 204) return undefined as T;
   return res.json();
 }
 
@@ -40,17 +42,36 @@ export interface Item {
   campus: string;
   is_available: boolean;
   created_at: string;
+  latitude: number | null;
+  longitude: number | null;
   owner_name: string;
   owner_avatar: string | null;
   owner_rating: string;
+  // Present only when the request supplied a lat/lng — meters from that point.
+  distance_m?: number | null;
 }
 
-export function getItems(params?: { campus?: string; category?: string; available?: boolean; owner?: string }) {
+export interface GetItemsParams {
+  campus?: string;
+  category?: string;
+  available?: boolean;
+  owner?: string;
+  // Location filtering: provide lat+lng to sort nearest-first; add radius (meters)
+  // to also restrict to items within that distance.
+  lat?: number;
+  lng?: number;
+  radius?: number;
+}
+
+export function getItems(params?: GetItemsParams) {
   const query = new URLSearchParams();
   if (params?.campus)   query.set('campus', params.campus);
   if (params?.category) query.set('category', params.category);
   if (params?.available !== undefined) query.set('available', String(params.available));
   if (params?.owner)    query.set('owner', params.owner);
+  if (params?.lat !== undefined)    query.set('lat', String(params.lat));
+  if (params?.lng !== undefined)    query.set('lng', String(params.lng));
+  if (params?.radius !== undefined) query.set('radius', String(params.radius));
   const qs = query.toString();
   return request<Item[]>(`/items${qs ? `?${qs}` : ''}`);
 }
@@ -66,6 +87,8 @@ export interface NewItem {
   price_per_day: number;
   photos?: string[];
   campus: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export function createItem(token: string, body: NewItem) {
@@ -213,6 +236,9 @@ export interface User {
   grad_year: number | null;
   major: string | null;
   bio: string | null;
+  interests: string[] | null;
+  dorm: string | null;
+  phone: string | null;
   rating_avg: string;   // NUMERIC → string on the wire
   rating_count: number;
   created_at: string;
@@ -226,12 +252,30 @@ export function getMe(token: string) {
 
 export function updateMe(
   token: string,
-  body: { name?: string; campus?: string; grad_year?: number; major?: string; bio?: string }
+  body: {
+    name?: string;
+    campus?: string;
+    grad_year?: number;
+    major?: string;
+    bio?: string;
+    interests?: string[];
+    dorm?: string;
+    phone?: string;
+    avatar_url?: string;
+  }
 ) {
   return request<User>('/users/me', {
     method: 'PATCH',
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify(body),
+  });
+}
+
+// Permanently deletes the account and all associated data.
+export function deleteMe(token: string) {
+  return request<void>('/users/me', {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
   });
 }
 

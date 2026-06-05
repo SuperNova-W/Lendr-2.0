@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -44,7 +44,7 @@ const fmtDateRange = (start: string, end: string) => {
   return `${new Date(start).toLocaleDateString(undefined, opts)} – ${new Date(end).toLocaleDateString(undefined, opts)}`;
 };
 
-export const ProfileScreen: React.FC<any> = ({ navigation }) => {
+export const ProfileScreen: React.FC<any> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
   const { session, signOut } = useAuth();
   const token = session?.access_token;
@@ -60,8 +60,13 @@ export const ProfileScreen: React.FC<any> = ({ navigation }) => {
   const [editOpen, setEditOpen] = useState(false);
   const [editName, setEditName] = useState('');
   const [editCampus, setEditCampus] = useState('');
+  const [editGradYear, setEditGradYear] = useState<number | null>(null);
+  const [editMajor, setEditMajor] = useState('');
   const [editBio, setEditBio] = useState('');
   const [saving, setSaving] = useState(false);
+
+  const currentYear = new Date().getFullYear();
+  const gradYears = Array.from({ length: 7 }, (_, i) => currentYear + i);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -98,9 +103,19 @@ export const ProfileScreen: React.FC<any> = ({ navigation }) => {
   function openEdit() {
     setEditName(me?.name ?? '');
     setEditCampus(me?.campus ?? '');
+    setEditGradYear(me?.grad_year ?? null);
+    setEditMajor(me?.major ?? '');
     setEditBio(me?.bio ?? '');
     setEditOpen(true);
   }
+
+  // Settings → "Edit Profile" navigates here with editOnFocus; open once loaded.
+  useEffect(() => {
+    if (route?.params?.editOnFocus && me) {
+      openEdit();
+      navigation.setParams({ editOnFocus: false });
+    }
+  }, [route?.params?.editOnFocus, me]);
 
   async function saveProfile() {
     if (!token) return;
@@ -109,6 +124,8 @@ export const ProfileScreen: React.FC<any> = ({ navigation }) => {
       const updated = await updateMe(token, {
         name: editName.trim(),
         campus: editCampus.trim(),
+        grad_year: editGradYear ?? undefined,
+        major: editMajor.trim(),
         bio: editBio.trim(),
       });
       setMe(updated);
@@ -347,13 +364,40 @@ export const ProfileScreen: React.FC<any> = ({ navigation }) => {
             maxLength={128}
           />
 
-          <Text style={styles.fieldLabel}>Campus</Text>
+          <Text style={styles.fieldLabel}>School</Text>
           <TextInput
             style={styles.input}
             value={editCampus}
             onChangeText={setEditCampus}
             placeholder="e.g. UCLA"
             placeholderTextColor={COLORS.text3}
+            maxLength={128}
+          />
+
+          <Text style={styles.fieldLabel}>Graduation year</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.editChipRow}>
+            {gradYears.map(y => {
+              const active = y === editGradYear;
+              return (
+                <Pressable
+                  key={y}
+                  style={[styles.editChip, active && styles.editChipActive]}
+                  onPress={() => setEditGradYear(active ? null : y)}
+                >
+                  <Text style={[styles.editChipText, active && styles.editChipTextActive]}>{y}</Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+
+          <Text style={styles.fieldLabel}>Major</Text>
+          <TextInput
+            style={styles.input}
+            value={editMajor}
+            onChangeText={setEditMajor}
+            placeholder="e.g. Computer Science"
+            placeholderTextColor={COLORS.text3}
+            maxLength={128}
           />
 
           <Text style={styles.fieldLabel}>Bio</Text>
@@ -722,6 +766,28 @@ const styles = StyleSheet.create({
     minHeight: 80,
     textAlignVertical: 'top',
   },
+  editChipRow: {
+    gap: 8,
+    paddingVertical: 2,
+  },
+  editChip: {
+    paddingVertical: 9,
+    paddingHorizontal: 15,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surface,
+  },
+  editChipActive: {
+    backgroundColor: COLORS.amber,
+    borderColor: COLORS.amber,
+  },
+  editChipText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 14,
+    color: COLORS.text2,
+  },
+  editChipTextActive: { color: '#fff' },
   saveBtn: {
     backgroundColor: COLORS.amber,
     borderRadius: 12,

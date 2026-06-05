@@ -35,17 +35,17 @@ router.post('/sync', requireAuth, async (req, res: Response, next: NextFunction)
       return;
     }
 
-    // $1 is reused for both id (UUID) and google_id (TEXT); cast google_id
-    // explicitly so Postgres doesn't error with "inconsistent types" (42P08).
+    // id (UUID) and google_id (TEXT) get separate params so Postgres can deduce
+    // each column's type independently — reusing one $1 triggers 42P08.
     const { rows } = await pool.query(
       `INSERT INTO users (id, google_id, email, name, avatar_url)
-       VALUES ($1, $1::text, $2, $3, $4)
+       VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (id) DO UPDATE
          SET name       = EXCLUDED.name,
              avatar_url = EXCLUDED.avatar_url,
              updated_at = now()
        RETURNING *`,
-      [userId, email, user_metadata?.full_name ?? email, user_metadata?.avatar_url ?? null]
+      [userId, userId, email, user_metadata?.full_name ?? email, user_metadata?.avatar_url ?? null]
     );
 
     const u = rows[0];

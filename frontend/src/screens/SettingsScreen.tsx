@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,15 +7,28 @@ import {
   Pressable,
   Switch,
   StatusBar,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../theme/colors';
+import { useAuth } from '../context/AuthContext';
+import { getMe, deleteMe, User } from '../lib/api';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
+const NOTIF_PREFS_KEY = 'lendr.notifPrefs';
+
 export const SettingsScreen: React.FC<any> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const { session, signOut } = useAuth();
+  const token = session?.access_token;
+
+  const [me, setMe] = useState<User | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const [notifBorrow, setNotifBorrow] = useState(true);
   const [notifMessages, setNotifMessages] = useState(true);
@@ -23,6 +36,69 @@ export const SettingsScreen: React.FC<any> = ({ navigation }) => {
   const [notifEmail, setNotifEmail] = useState(false);
   const [showLastActive, setShowLastActive] = useState(true);
   const [publicProfile, setPublicProfile] = useState(true);
+
+  // Load profile for the Account section
+  useFocusEffect(
+    useCallback(() => {
+      if (token) getMe(token).then(setMe).catch(console.error);
+    }, [token])
+  );
+
+  // Persist notification/privacy toggles locally (no push backend yet)
+  useEffect(() => {
+    AsyncStorage.getItem(NOTIF_PREFS_KEY).then(raw => {
+      if (!raw) return;
+      try {
+        const p = JSON.parse(raw);
+        setNotifBorrow(p.notifBorrow ?? true);
+        setNotifMessages(p.notifMessages ?? true);
+        setNotifReturns(p.notifReturns ?? false);
+        setNotifEmail(p.notifEmail ?? false);
+        setShowLastActive(p.showLastActive ?? true);
+        setPublicProfile(p.publicProfile ?? true);
+      } catch {}
+    });
+  }, []);
+
+  function persistPrefs(next: Record<string, boolean>) {
+    const merged = { notifBorrow, notifMessages, notifReturns, notifEmail, showLastActive, publicProfile, ...next };
+    AsyncStorage.setItem(NOTIF_PREFS_KEY, JSON.stringify(merged)).catch(() => {});
+  }
+
+  const comingSoon = (feature: string) =>
+    Alert.alert(`${feature}`, 'This feature is coming soon.');
+
+  function confirmLogout() {
+    Alert.alert('Log out?', 'You can sign back in anytime.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Log Out', style: 'destructive', onPress: () => signOut() },
+    ]);
+  }
+
+  function confirmDelete() {
+    Alert.alert(
+      'Delete account?',
+      'This permanently removes your profile, listings, and requests. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            if (!token) return;
+            setDeleting(true);
+            try {
+              await deleteMe(token);
+              await signOut(); // drops back to the auth flow
+            } catch (e: any) {
+              setDeleting(false);
+              Alert.alert('Could not delete account', e.message ?? 'Something went wrong');
+            }
+          },
+        },
+      ]
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -45,15 +121,21 @@ export const SettingsScreen: React.FC<any> = ({ navigation }) => {
 
         <SectionLabel label="Account" />
         <SettingsCard>
-          <NavRow icon="person-outline" label="Edit Profile" onPress={() => {}} />
+          <NavRow
+            icon="person-outline"
+            label="Edit Profile"
+            onPress={() => navigation.navigate('Profile', { editOnFocus: true })}
+          />
           <Divider />
-          <NavRow icon="mail-outline" label="Email Address" detail="kayla@ucla.edu" onPress={() => {}} />
+          <InfoRow icon="mail-outline" label="Email Address" detail={me?.email ?? '—'} />
           <Divider />
-          <NavRow icon="key-outline" label="Change Password" onPress={() => {}} />
+          <InfoRow icon="school-outline" label="School" detail={me?.campus ?? 'Not set'} />
           <Divider />
-          <NavRow icon="call-outline" label="Phone Number" detail="(310) 555-0192" onPress={() => {}} />
-          <Divider />
-          <NavRow icon="school-outline" label="Campus" detail="UCLA" onPress={() => {}} />
+          <InfoRow
+            icon="ribbon-outline"
+            label="Class of"
+            detail={me?.grad_year ? String(me.grad_year) : 'Not set'}
+          />
         </SettingsCard>
 
         <SectionLabel label="Notifications" />
@@ -63,7 +145,7 @@ export const SettingsScreen: React.FC<any> = ({ navigation }) => {
             label="Borrow Requests"
             description="When someone wants to borrow your item"
             value={notifBorrow}
-            onChange={setNotifBorrow}
+            onChange={v => { setNotifBorrow(v); persistPrefs({ notifBorrow: v }); }}
           />
           <Divider />
           <ToggleRow
@@ -71,7 +153,7 @@ export const SettingsScreen: React.FC<any> = ({ navigation }) => {
             label="Messages"
             description="Direct messages from other students"
             value={notifMessages}
-            onChange={setNotifMessages}
+            onChange={v => { setNotifMessages(v); persistPrefs({ notifMessages: v }); }}
           />
           <Divider />
           <ToggleRow
@@ -79,7 +161,7 @@ export const SettingsScreen: React.FC<any> = ({ navigation }) => {
             label="Return Reminders"
             description="Reminders when a borrowed item is due"
             value={notifReturns}
-            onChange={setNotifReturns}
+            onChange={v => { setNotifReturns(v); persistPrefs({ notifReturns: v }); }}
           />
           <Divider />
           <ToggleRow
@@ -87,7 +169,7 @@ export const SettingsScreen: React.FC<any> = ({ navigation }) => {
             label="Email Digest"
             description="Weekly summary of marketplace activity"
             value={notifEmail}
-            onChange={setNotifEmail}
+            onChange={v => { setNotifEmail(v); persistPrefs({ notifEmail: v }); }}
           />
         </SettingsCard>
 
@@ -98,7 +180,7 @@ export const SettingsScreen: React.FC<any> = ({ navigation }) => {
             label="Public Profile"
             description="Other students can find and view your profile"
             value={publicProfile}
-            onChange={setPublicProfile}
+            onChange={v => { setPublicProfile(v); persistPrefs({ publicProfile: v }); }}
           />
           <Divider />
           <ToggleRow
@@ -106,52 +188,55 @@ export const SettingsScreen: React.FC<any> = ({ navigation }) => {
             label="Show Last Active"
             description="Let others see when you were last online"
             value={showLastActive}
-            onChange={setShowLastActive}
+            onChange={v => { setShowLastActive(v); persistPrefs({ showLastActive: v }); }}
           />
           <Divider />
-          <NavRow icon="ban-outline" label="Blocked Users" detail="0 blocked" onPress={() => {}} />
+          <NavRow icon="ban-outline" label="Blocked Users" onPress={() => comingSoon('Blocked Users')} />
           <Divider />
-          <NavRow icon="shield-checkmark-outline" label="Safety Center" onPress={() => {}} />
-        </SettingsCard>
-
-        <SectionLabel label="Payments" />
-        <SettingsCard>
-          <NavRow icon="card-outline" label="Payment Methods" detail="Venmo connected" onPress={() => {}} />
-          <Divider />
-          <NavRow icon="business-outline" label="Payout Account" detail="Bank •• 4291" onPress={() => {}} />
-          <Divider />
-          <NavRow icon="receipt-outline" label="Transaction History" onPress={() => {}} />
+          <NavRow icon="shield-checkmark-outline" label="Safety Center" onPress={() => comingSoon('Safety Center')} />
         </SettingsCard>
 
         <SectionLabel label="Support" />
         <SettingsCard>
-          <NavRow icon="help-circle-outline" label="Help Center" onPress={() => {}} />
+          <NavRow icon="help-circle-outline" label="Help Center" onPress={() => comingSoon('Help Center')} />
           <Divider />
-          <NavRow icon="bug-outline" label="Report a Bug" onPress={() => {}} />
+          <NavRow icon="bug-outline" label="Report a Bug" onPress={() => comingSoon('Report a Bug')} />
           <Divider />
-          <NavRow icon="star-outline" label="Rate Lendr" onPress={() => {}} />
+          <NavRow icon="star-outline" label="Rate Lendr" onPress={() => comingSoon('Rate Lendr')} />
         </SettingsCard>
 
         <SectionLabel label="About" />
         <SettingsCard>
-          <NavRow icon="document-text-outline" label="Terms of Service" onPress={() => {}} />
+          <NavRow
+            icon="document-text-outline"
+            label="Terms of Service"
+            onPress={() => navigation.navigate('Legal', { kind: 'terms' })}
+          />
           <Divider />
-          <NavRow icon="lock-closed-outline" label="Privacy Policy" onPress={() => {}} />
+          <NavRow
+            icon="lock-closed-outline"
+            label="Privacy Policy"
+            onPress={() => navigation.navigate('Legal', { kind: 'privacy' })}
+          />
           <Divider />
           <InfoRow icon="information-circle-outline" label="Version" detail="1.0.0 (build 42)" />
         </SettingsCard>
 
         <SectionLabel label="Danger Zone" />
         <SettingsCard>
-          <Pressable style={styles.dangerRow}>
+          <Pressable style={styles.dangerRow} onPress={confirmDelete} disabled={deleting}>
             <View style={[styles.iconTile, { backgroundColor: COLORS.redLight }]}>
-              <Ionicons name="trash-outline" size={16} color={COLORS.red} />
+              {deleting ? (
+                <ActivityIndicator size="small" color={COLORS.red} />
+              ) : (
+                <Ionicons name="trash-outline" size={16} color={COLORS.red} />
+              )}
             </View>
-            <Text style={styles.dangerLabel}>Delete Account</Text>
+            <Text style={styles.dangerLabel}>{deleting ? 'Deleting…' : 'Delete Account'}</Text>
           </Pressable>
         </SettingsCard>
 
-        <Pressable style={styles.logoutBtn}>
+        <Pressable style={styles.logoutBtn} onPress={confirmLogout}>
           <Text style={styles.logoutText}>Log Out</Text>
         </Pressable>
 

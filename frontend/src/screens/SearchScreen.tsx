@@ -11,8 +11,10 @@ import {
   FlatList,
   Modal,
   Keyboard,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../theme/colors';
 import { CATEGORIES } from '../data/dummyData';
@@ -27,6 +29,9 @@ const SORTS: { id: Sort; label: string }[] = [
   { id: 'price_asc',  label: 'Price: Low to High' },
   { id: 'price_desc', label: 'Price: High to Low' },
 ];
+
+const MI_TO_M = 1609.34;
+const RADII = [1, 3, 5, 10, 25]; // miles
 
 export const SearchScreen: React.FC<any> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
@@ -44,12 +49,56 @@ export const SearchScreen: React.FC<any> = ({ navigation }) => {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
 
+  // Location-radius filter
+  const [radiusMi, setRadiusMi] = useState<number | null>(null);
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [geoLoading, setGeoLoading] = useState(false);
+
   useEffect(() => {
     getItems()
       .then(setAllItems)
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  // Re-query the backend (PostGIS ST_DWithin) whenever the radius/location changes.
+  useEffect(() => {
+    if (radiusMi === null || !coords) return;
+    setGeoLoading(true);
+    getItems({ lat: coords.lat, lng: coords.lng, radius: radiusMi * MI_TO_M })
+      .then(setAllItems)
+      .catch(console.error)
+      .finally(() => setGeoLoading(false));
+  }, [radiusMi, coords]);
+
+  // Selecting a radius requests location (with a "filtering only" message) first.
+  async function selectRadius(mi: number) {
+    if (radiusMi === mi) {
+      // Toggle off → restore the full list
+      setRadiusMi(null);
+      setGeoLoading(true);
+      getItems().then(setAllItems).catch(console.error).finally(() => setGeoLoading(false));
+      return;
+    }
+    if (!coords) {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Location needed for distance',
+          'Lendr uses your location only to filter listings by how far away they are. It is never shared with other students. You can enable it in Settings anytime.'
+        );
+        return;
+      }
+      try {
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      } catch {
+        Alert.alert('Could not get location', 'Please try again.');
+        return;
+      }
+    }
+    setRadiusMi(mi);
+  }
 
   // Autocomplete: unique titles + categories matching the current query
   const suggestions = useMemo(() => {
@@ -81,17 +130,21 @@ export const SearchScreen: React.FC<any> = ({ navigation }) => {
       return matchQ && matchCat && matchMin && matchMax;
     });
 
+    // When a radius is active the backend already returns items nearest-first;
+    // keep that order unless the user explicitly chose a price sort.
+    const geoActive = radiusMi !== null && !!coords;
     out = [...out].sort((a, b) => {
       if (sort === 'price_asc')  return Number(a.price_per_day) - Number(b.price_per_day);
       if (sort === 'price_desc') return Number(b.price_per_day) - Number(a.price_per_day);
+      if (geoActive) return (a.distance_m ?? Infinity) - (b.distance_m ?? Infinity);
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
 
     return out;
-  }, [allItems, query, category, sort, minPrice, maxPrice]);
+  }, [allItems, query, category, sort, minPrice, maxPrice, radiusMi, coords]);
 
   const activeFilterCount =
-    (category !== 'All' ? 1 : 0) + (minPrice ? 1 : 0) + (maxPrice ? 1 : 0);
+    (category !== 'All' ? 1 : 0) + (minPrice ? 1 : 0) + (maxPrice ? 1 : 0) + (radiusMi !== null ? 1 : 0);
 
   function pickSuggestion(s: string) {
     setQuery(s);
@@ -103,6 +156,10 @@ export const SearchScreen: React.FC<any> = ({ navigation }) => {
     setCategory('All');
     setMinPrice('');
     setMaxPrice('');
+    if (radiusMi !== null) {
+      setRadiusMi(null);
+      getItems().then(setAllItems).catch(console.error);
+    }
   }
 
   return (
@@ -258,6 +315,24 @@ export const SearchScreen: React.FC<any> = ({ navigation }) => {
               );
             })}
           </View>
+
+          <View style={styles.filterLabelRow}>
+            <Text style={styles.filterLabel}>Distance</Text>
+            {geoLoading && <ActivityIndicator size="small" color={COLORS.text3} />}
+          </View>
+          <View style={styles.chipWrap}>
+            {RADII.map(mi => {
+              const active = mi === radiusMi;
+              return (
+                <Pressable key={mi} style={[styles.chip, active && styles.chipActive]} onPress={() => selectRadius(mi)}>
+                  <Text style={[styles.chipText, active && styles.chipTextActive]}>{mi} mi</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Text style={styles.distanceHelp}>
+            Location is used only to filter by distance — never shared with other students.
+          </Text>
 
           <Text style={styles.filterLabel}>Price per day</Text>
           <View style={styles.priceRow}>
@@ -534,6 +609,18 @@ const styles = StyleSheet.create({
     color: COLORS.text1,
     marginTop: 16,
     marginBottom: 10,
+  },
+  filterLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  distanceHelp: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 12,
+    color: COLORS.text3,
+    marginTop: 8,
+    lineHeight: 17,
   },
   chipWrap: {
     flexDirection: 'row',

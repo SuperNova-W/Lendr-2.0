@@ -27,6 +27,16 @@ export const GridCard: React.FC<GridCardProps> = ({ item, onPress }) => {
 
       <View style={styles.body}>
         <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
+        {typeof item.distance_m === 'number' && (
+          <View style={styles.distanceRow}>
+            <Ionicons name="location-outline" size={11} color={COLORS.text3} />
+            <Text style={styles.distanceText}>
+              {item.distance_m < 1609
+                ? `${Math.round(item.distance_m / 160.934) / 10} mi`
+                : `${(item.distance_m / 1609.34).toFixed(1)} mi`} away
+            </Text>
+          </View>
+        )}
         <View style={styles.metaRow}>
           <Text style={styles.price}>${Number(item.price_per_day)}/day</Text>
           <View style={styles.tag}>
@@ -77,6 +87,17 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_600SemiBold',
     fontSize: 14,
     color: COLORS.text1,
+  },
+  distanceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginTop: -2,
+  },
+  distanceText: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 11,
+    color: COLORS.text3,
   },
   metaRow: {
     flexDirection: 'row',

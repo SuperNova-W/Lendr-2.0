@@ -2,6 +2,7 @@ import { Router, Response, NextFunction } from 'express';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 import { updateUserSchema } from '../schemas';
 import { pool } from '../db/pool';
+import { supabase } from '../lib/supabase';
 
 const router = Router();
 router.use(requireAuth);
@@ -33,6 +34,18 @@ router.patch('/me', async (req, res: Response, next: NextFunction) => {
       [(req as AuthRequest).userId, ...values]
     );
     res.json(rows[0]);
+  } catch (err) { next(err); }
+});
+
+// DELETE /users/me — permanently delete the account.
+// Removing the auth user cascades to public.users (and their items/requests
+// via the FK ON DELETE CASCADE), so this wipes all of the user's data.
+router.delete('/me', async (req, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req as AuthRequest).userId;
+    const { error } = await supabase.auth.admin.deleteUser(userId);
+    if (error) throw new Error(error.message);
+    res.status(204).send();
   } catch (err) { next(err); }
 });
 

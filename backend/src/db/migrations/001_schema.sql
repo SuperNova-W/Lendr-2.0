@@ -56,9 +56,9 @@ END $$;
 
 CREATE TABLE IF NOT EXISTS requests (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  item_id      UUID NOT NULL REFERENCES items(id),
-  borrower_id  UUID NOT NULL REFERENCES users(id),
-  owner_id     UUID NOT NULL REFERENCES users(id),
+  item_id      UUID NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+  borrower_id  UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  owner_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   status       request_status NOT NULL DEFAULT 'pending',
   start_date   DATE NOT NULL,
   end_date     DATE NOT NULL,
@@ -76,9 +76,9 @@ CREATE INDEX IF NOT EXISTS idx_req_status   ON requests (status);
 -- ── ratings ──────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS ratings (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  request_id UUID NOT NULL REFERENCES requests(id),
-  rater_id   UUID NOT NULL REFERENCES users(id),
-  ratee_id   UUID NOT NULL REFERENCES users(id),
+  request_id UUID NOT NULL REFERENCES requests(id) ON DELETE CASCADE,
+  rater_id   UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  ratee_id   UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   stars      SMALLINT NOT NULL CHECK (stars BETWEEN 1 AND 5),
   comment    TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
