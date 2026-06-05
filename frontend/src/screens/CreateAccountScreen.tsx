@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Platform,
   useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,7 +41,10 @@ export const CreateAccountScreen: React.FC<any> = ({ navigation }) => {
     try {
       await signInWithGoogle();
     } catch (err: any) {
-      Alert.alert('Sign in failed', err.message ?? 'Something went wrong');
+      const msg = err?.message ?? 'Something went wrong';
+      // Alert is a no-op on web, so surface the error there too.
+      if (Platform.OS === 'web') window.alert(`Sign in failed: ${msg}`);
+      else Alert.alert('Sign in failed', msg);
     } finally {
       setGoogleLoading(false);
     }

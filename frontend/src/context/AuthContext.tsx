@@ -89,15 +89,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function signInWithGoogle() {
     console.log('OAuth redirectTo (add this to Supabase allow-list):', redirectTo);
 
-    // On web, let supabase redirect the whole page to Google; the OAuth callback
-    // lands back on our origin with ?code=... and supabase-js (detectSessionInUrl)
-    // exchanges it on reload, firing onAuthStateChange.
+    // On web, get the provider URL and navigate the whole page to it ourselves
+    // (supabase-js's auto-redirect is unreliable inside a react-native-web
+    // bundle). The OAuth callback lands back on our origin with ?code=... and
+    // supabase-js (detectSessionInUrl) exchanges it on reload.
     if (Platform.OS === 'web') {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo },
+        options: { redirectTo, skipBrowserRedirect: true },
       });
       if (error) throw error;
+      if (!data?.url) throw new Error('No auth URL returned');
+      window.location.assign(data.url);
       return;
     }
 
