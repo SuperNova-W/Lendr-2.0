@@ -1,0 +1,17 @@
+# Netlify build config for the Lendr Expo (web) app, which lives in frontend/.
+# `base` is where Netlify runs install + build; `publish` is resolved relative
+# to it. This file overrides the dashboard "Base directory" setting.
+[build]
+  base = "frontend"
+  command = "npx expo export -p web"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA fallback: every route serves index.html so client-side navigation works
+# on hard refresh / deep links. (Also emitted via frontend/public/_redirects.)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
