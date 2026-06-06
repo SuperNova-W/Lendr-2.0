@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { showAlert } from "../lib/alert";
 import { Alert, Platform } from 'react-native';
 import { Session } from '@supabase/supabase-js';
 import * as WebBrowser from 'expo-web-browser';
@@ -41,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (err instanceof ApiError && err.code === 'NOT_COLLEGE_EMAIL') {
         // Not a student — the backend already removed the auth user; sign out locally.
         await supabase.auth.signOut();
-        Alert.alert('Students only', err.message);
+        showAlert('Students only', err.message);
         return false;
       }
       console.error('sync failed', err);

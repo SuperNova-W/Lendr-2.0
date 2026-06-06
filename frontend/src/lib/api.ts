@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 const BASE_URL = 'https://bkd2h4r7bc.execute-api.us-east-1.amazonaws.com';
 
 // Error that preserves the backend's status + machine-readable `code`
@@ -106,8 +108,15 @@ export async function uploadPhoto(token: string, uri: string): Promise<string> {
   const type = ext === 'png' ? 'image/png' : 'image/jpeg';
 
   const form = new FormData();
-  // React Native's FormData accepts this { uri, name, type } shape.
-  form.append('photo', { uri, name, type } as any);
+  if (Platform.OS === 'web') {
+    // Browsers need a real Blob/File, not RN's { uri, name, type } shape. The
+    // picker returns a blob:/data: URL we can fetch back into a Blob.
+    const blob = await (await fetch(uri)).blob();
+    form.append('photo', blob, name);
+  } else {
+    // React Native's FormData accepts this { uri, name, type } shape.
+    form.append('photo', { uri, name, type } as any);
+  }
 
   const res = await fetch(`${BASE_URL}/upload`, {
     method: 'POST',

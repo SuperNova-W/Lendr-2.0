@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { showAlert } from "../lib/alert";
 import {
   StyleSheet,
   Text,
@@ -106,7 +107,7 @@ export const SetupProfileScreen: React.FC = () => {
   async function pickPhoto() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('Permission needed', 'Allow photo access to choose a profile picture.');
+      showAlert('Permission needed', 'Allow photo access to choose a profile picture.');
       return;
     }
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.7 });
@@ -124,7 +125,7 @@ export const SetupProfileScreen: React.FC = () => {
   };
 
   async function finish() {
-    if (!token) { Alert.alert('Session expired', 'Please sign in again.'); return; }
+    if (!token) { showAlert('Session expired', 'Please sign in again.'); return; }
     setSaving(true);
     try {
       let avatarUrl: string | undefined;
@@ -145,7 +146,7 @@ export const SetupProfileScreen: React.FC = () => {
       });
       completeOnboarding();
     } catch (e: any) {
-      Alert.alert('Could not save', e.message ?? 'Something went wrong');
+      showAlert('Could not save', e.message ?? 'Something went wrong');
     } finally {
       setSaving(false);
     }

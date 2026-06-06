@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { showAlert } from "../lib/alert";
 import {
   StyleSheet,
   Text,
@@ -131,14 +132,14 @@ export const ProfileScreen: React.FC<any> = ({ navigation, route }) => {
       setMe(updated);
       setEditOpen(false);
     } catch (err: any) {
-      Alert.alert('Could not save', err.message ?? 'Something went wrong');
+      showAlert('Could not save', err.message ?? 'Something went wrong');
     } finally {
       setSaving(false);
     }
   }
 
   function confirmLogout() {
-    Alert.alert('Log out?', 'You can sign back in anytime.', [
+    showAlert('Log out?', 'You can sign back in anytime.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Log Out', style: 'destructive', onPress: () => signOut() },
     ]);

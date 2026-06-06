@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { showAlert } from "../lib/alert";
 import {
   StyleSheet,
   Text,
@@ -66,17 +67,17 @@ export const SettingsScreen: React.FC<any> = ({ navigation }) => {
   }
 
   const comingSoon = (feature: string) =>
-    Alert.alert(`${feature}`, 'This feature is coming soon.');
+    showAlert(`${feature}`, 'This feature is coming soon.');
 
   function confirmLogout() {
-    Alert.alert('Log out?', 'You can sign back in anytime.', [
+    showAlert('Log out?', 'You can sign back in anytime.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Log Out', style: 'destructive', onPress: () => signOut() },
     ]);
   }
 
   function confirmDelete() {
-    Alert.alert(
+    showAlert(
       'Delete account?',
       'This permanently removes your profile, listings, and requests. This cannot be undone.',
       [
@@ -92,7 +93,7 @@ export const SettingsScreen: React.FC<any> = ({ navigation }) => {
               await signOut(); // drops back to the auth flow
             } catch (e: any) {
               setDeleting(false);
-              Alert.alert('Could not delete account', e.message ?? 'Something went wrong');
+              showAlert('Could not delete account', e.message ?? 'Something went wrong');
             }
           },
         },

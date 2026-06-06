@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { showAlert } from "../lib/alert";
 import {
   StyleSheet,
   Text,
@@ -45,7 +46,7 @@ export const AddItemScreen: React.FC<any> = ({ navigation }) => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert(
+        showAlert(
           'Location off',
           'Lendr only uses your location to tag where this item is available, so borrowers can filter by distance. You can still list without it.'
         );
@@ -54,7 +55,7 @@ export const AddItemScreen: React.FC<any> = ({ navigation }) => {
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       setCoords({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
     } catch {
-      Alert.alert('Could not get location', 'Please try again.');
+      showAlert('Could not get location', 'Please try again.');
     } finally {
       setLocLoading(false);
     }
@@ -70,12 +71,12 @@ export const AddItemScreen: React.FC<any> = ({ navigation }) => {
 
   async function pickImage() {
     if (photos.length >= MAX_PHOTOS) {
-      Alert.alert('Limit reached', `You can add up to ${MAX_PHOTOS} photos.`);
+      showAlert('Limit reached', `You can add up to ${MAX_PHOTOS} photos.`);
       return;
     }
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('Permission needed', 'Please allow photo library access to add photos.');
+      showAlert('Permission needed', 'Please allow photo library access to add photos.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -103,9 +104,9 @@ export const AddItemScreen: React.FC<any> = ({ navigation }) => {
   }
 
   async function submit() {
-    if (!token) { Alert.alert('Sign in required', 'Please sign in again.'); return; }
+    if (!token) { showAlert('Sign in required', 'Please sign in again.'); return; }
     const err = validate();
-    if (err) { Alert.alert('Check your listing', err); return; }
+    if (err) { showAlert('Check your listing', err); return; }
 
     setSubmitting(true);
     try {
@@ -126,11 +127,11 @@ export const AddItemScreen: React.FC<any> = ({ navigation }) => {
         longitude: coords?.longitude,
       });
 
-      Alert.alert('Listed!', `"${title.trim()}" is now available to borrow.`, [
+      showAlert('Listed!', `"${title.trim()}" is now available to borrow.`, [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (e: any) {
-      Alert.alert('Could not list item', e.message ?? 'Something went wrong');
+      showAlert('Could not list item', e.message ?? 'Something went wrong');
     } finally {
       setSubmitting(false);
     }

@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { showAlert } from "../lib/alert";
 import {
   StyleSheet,
   Text,
@@ -63,7 +64,7 @@ export const ItemDetailScreen: React.FC<any> = ({ route, navigation }) => {
   async function submitRequest() {
     const token = session?.access_token;
     if (!token) {
-      Alert.alert('Sign in required', 'Please sign in again to request this item.');
+      showAlert('Sign in required', 'Please sign in again to request this item.');
       return;
     }
     setSubmitting(true);
@@ -76,9 +77,9 @@ export const ItemDetailScreen: React.FC<any> = ({ route, navigation }) => {
       });
       setSheetOpen(false);
       setMessage('');
-      Alert.alert('Request sent', `Your request to borrow "${item.title}" was sent to ${item.owner_name}.`);
+      showAlert('Request sent', `Your request to borrow "${item.title}" was sent to ${item.owner_name}.`);
     } catch (err: any) {
-      Alert.alert('Could not send request', err.message ?? 'Something went wrong');
+      showAlert('Could not send request', err.message ?? 'Something went wrong');
     } finally {
       setSubmitting(false);
     }

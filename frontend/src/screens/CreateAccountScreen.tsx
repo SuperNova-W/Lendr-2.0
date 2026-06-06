@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { showAlert } from "../lib/alert";
 import {
   View,
   Text,
@@ -41,10 +42,7 @@ export const CreateAccountScreen: React.FC<any> = ({ navigation }) => {
     try {
       await signInWithGoogle();
     } catch (err: any) {
-      const msg = err?.message ?? 'Something went wrong';
-      // Alert is a no-op on web, so surface the error there too.
-      if (Platform.OS === 'web') window.alert(`Sign in failed: ${msg}`);
-      else Alert.alert('Sign in failed', msg);
+      showAlert('Sign in failed', err?.message ?? 'Something went wrong');
     } finally {
       setGoogleLoading(false);
     }

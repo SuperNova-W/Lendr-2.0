@@ -1,4 +1,5 @@
 import React, { useCallback, useState } from 'react';
+import { showAlert } from "../lib/alert";
 import {
   StyleSheet,
   Text,
@@ -88,14 +89,14 @@ export const RequestsScreen: React.FC<any> = ({ navigation }) => {
       await updateRequestStatus(token, id, status);
       await load();
     } catch (err: any) {
-      Alert.alert('Action failed', err.message ?? 'Something went wrong');
+      showAlert('Action failed', err.message ?? 'Something went wrong');
     } finally {
       setActingId(null);
     }
   }
 
   function confirmDecline(id: string) {
-    Alert.alert('Decline request?', 'The borrower will be notified.', [
+    showAlert('Decline request?', 'The borrower will be notified.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Decline', style: 'destructive', onPress: () => act(id, 'declined') },
     ]);

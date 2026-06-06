@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { showAlert } from "../lib/alert";
 import {
   StyleSheet,
   Text,
@@ -83,7 +84,7 @@ export const SearchScreen: React.FC<any> = ({ navigation }) => {
     if (!coords) {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert(
+        showAlert(
           'Location needed for distance',
           'Lendr uses your location only to filter listings by how far away they are. It is never shared with other students. You can enable it in Settings anytime.'
         );
@@ -93,7 +94,7 @@ export const SearchScreen: React.FC<any> = ({ navigation }) => {
         const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
         setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
       } catch {
-        Alert.alert('Could not get location', 'Please try again.');
+        showAlert('Could not get location', 'Please try again.');
         return;
       }
     }
