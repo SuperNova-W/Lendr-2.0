@@ -3,18 +3,27 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 import { AppError } from '../middleware/error';
 import { createRequestSchema, updateRequestSchema } from '../schemas';
 import { pool } from '../db/pool';
+import { ensureConversationForRequest } from '../lib/messaging';
 
 const router = Router();
 router.use(requireAuth);
 
 // POST /requests  — borrower creates a request
+//
+// Runs in a transaction so the request and its conversation are created
+// atomically. If the borrower included an opening `message`, it is both kept on
+// the request (backward compatible) and seeded as the first message in the new
+// conversation.
 router.post('/', async (req, res: Response, next: NextFunction) => {
+  const client = await pool.connect();
   try {
     const data       = createRequestSchema.parse(req.body);
     const borrowerId = (req as AuthRequest).userId;
 
+    await client.query('BEGIN');
+
     // Fetch item to get owner + price
-    const itemRes = await pool.query(
+    const itemRes = await client.query(
       'SELECT * FROM items WHERE id = $1 AND is_available = true',
       [data.item_id]
     );
@@ -29,15 +38,26 @@ router.post('/', async (req, res: Response, next: NextFunction) => {
     if (days <= 0) throw new AppError(400, 'end_date must be after start_date');
     const totalPrice = (item.price_per_day * days).toFixed(2);
 
-    const { rows } = await pool.query(
+    const { rows } = await client.query(
       `INSERT INTO requests
          (item_id, borrower_id, owner_id, start_date, end_date, total_price, message)
        VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
       [data.item_id, borrowerId, item.owner_id,
        data.start_date, data.end_date, totalPrice, data.message ?? null]
     );
-    res.status(201).json(rows[0]);
-  } catch (err) { next(err); }
+    const request = rows[0];
+
+    // Open the conversation for this request, seeding the opening note (if any).
+    await ensureConversationForRequest(client, request, { seedFirstMessage: true });
+
+    await client.query('COMMIT');
+    res.status(201).json(request);
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    next(err);
+  } finally {
+    client.release();
+  }
 });
 
 // GET /requests/mine  — requests I've sent as borrower

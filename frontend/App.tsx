@@ -19,6 +19,7 @@ import { RequestsScreen } from './src/screens/RequestsScreen';
 import { SearchScreen } from './src/screens/SearchScreen';
 import { AddItemScreen } from './src/screens/AddItemScreen';
 import { MessagesScreen } from './src/screens/MessagesScreen';
+import { MessageThreadScreen } from './src/screens/MessageThreadScreen';
 import { NotificationsScreen } from './src/screens/NotificationsScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
@@ -46,6 +47,7 @@ function Navigator() {
           <Stack.Screen name="Search" component={SearchScreen} />
           <Stack.Screen name="AddItem" component={AddItemScreen} />
           <Stack.Screen name="Messages" component={MessagesScreen} />
+          <Stack.Screen name="MessageThread" component={MessageThreadScreen} />
           <Stack.Screen name="Notifications" component={NotificationsScreen} />
           <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />

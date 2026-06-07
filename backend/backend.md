@@ -35,6 +35,8 @@ schemas, deployment, or database shape.
 | `src/db/pool.ts` | Shared `pg` Pool using `DATABASE_URL`; should point at Supabase transaction pooler. |
 | `src/lib/supabase.ts` | Server-only Supabase service-role client for Auth admin and Storage. |
 | `src/lib/eduEmail.ts` | College-email gate used during auth sync. |
+| `src/lib/messaging.ts` | `ensureConversationForRequest` — idempotent create-or-return of a request's conversation (used by `/requests` and `/messages`). |
+| `src/lib/push.ts` | `notifyNewMessage` — fire-and-forget push delivery seam (no-op MVP; wire Expo/FCM here). |
 | `src/middleware/auth.ts` | Verifies Supabase JWT bearer tokens and sets `req.userId`. |
 | `src/middleware/error.ts` | Converts Zod/AppError/unknown errors into JSON responses. |
 | `src/schemas.ts` | Zod request-body validation schemas. |
@@ -81,6 +83,13 @@ Authorization: Bearer <supabase_access_token>
 | `PATCH` | `/requests/:id` | Yes | Owner approves/declines/returns; borrower cancels. Updates item availability. |
 | `POST` | `/upload` | Yes | Upload one image field named `photo`; returns public Supabase Storage URL. |
 | `GET` | `/stats` | No | Homepage stats, optionally filtered by `campus`. |
+| `GET` | `/messages/conversations` | Yes | List the current user's conversations with item, other participant, last-message preview, unread count, and request status. |
+| `GET` | `/messages/conversations/:id` | Yes | One conversation's context plus its messages (ascending). Participant-only. |
+| `POST` | `/messages/conversations` | Yes | Create or return the conversation for `{ request_id }`. Caller must be that request's borrower or owner. |
+| `POST` | `/messages/conversations/:id/messages` | Yes | Send `{ body }` (1–2000 chars). Participant-only; sender is the authed user. |
+| `PATCH` | `/messages/conversations/:id/read` | Yes | Mark the other participant's messages read. Returns `{ updated: number }`. Participant-only. |
+| `POST` | `/push/register` | Yes | Store/refresh a device push `{ token, platform }` for the current user. |
+| `DELETE` | `/push/token` | Yes | Remove a `{ token }` for the current user (e.g. on sign-out). |
 
 There is currently no ratings API route. The `ratings` table exists in the
 schema for the intended post-borrow review flow, but the backend does not expose
@@ -114,6 +123,49 @@ approved, declined, returned, cancelled
 `active` exists in the enum but is not currently transitioned to by the backend.
 When a request is approved, `items.is_available` is set to `false`. When it is
 returned, declined, or cancelled, `items.is_available` is set back to `true`.
+
+### Messaging lifecycle
+
+Each borrow request has exactly one conversation (`conversations.request_id` is
+`UNIQUE`), tying a thread to the borrower, owner, and item.
+
+1. **Creation.** `POST /requests` opens the conversation in the *same
+   transaction* that creates the request (`src/lib/messaging.ts`
+   `ensureConversationForRequest`). If the borrower included an opening
+   `message`, it is kept on `requests.message` (backward compatible) **and**
+   seeded as the conversation's first message. `POST /messages/conversations`
+   is the idempotent fallback — it create-or-returns the thread for a request
+   the caller is part of (also seeding the opening note if the thread is still
+   empty), which covers requests created before this feature existed.
+2. **Sending.** `POST /messages/conversations/:id/messages` inserts a row with
+   `sender_id` taken from the verified token (never the body), then bumps
+   `conversations.last_message_at`/`updated_at`. Bodies are validated to 1–2000
+   characters after trimming.
+3. **Reading.** `PATCH /messages/conversations/:id/read` sets `read_at = now()`
+   on the *other* participant's still-unread messages and returns the count. The
+   list endpoint derives `unread_count` per conversation from the same rule
+   (`sender_id <> me AND read_at IS NULL`).
+4. **Access control.** Every messaging route loads the conversation (or request)
+   and rejects anyone who is neither `borrower_id` nor `owner_id` with `403`
+   (`404` if it doesn't exist). There is no path by which a non-participant can
+   read, send, mark read, or create a conversation.
+
+The list endpoint joins the item, request status, and the *other* user via a
+`CASE` on the caller's id, and uses `LATERAL` subqueries for the last-message
+preview and unread count. Ordering is `last_message_at DESC NULLS LAST,
+created_at DESC`.
+
+### Push notifications (future hook)
+
+Messaging is built to gain push notifications without a refactor:
+
+- **Tokens** are collected now via `POST /push/register` /
+  `DELETE /push/token` into `device_push_tokens` (unique per `user_id, token`).
+- **The delivery seam** is `src/lib/push.ts` `notifyNewMessage(...)` — a
+  fire-and-forget no-op today. The send route already calls it with the
+  recipient and `{ conversationId, requestId, itemId }`, so wiring Expo Push /
+  FCM is a contained change to that one function. The data payload is shaped so
+  a tapped notification can deep-link straight into the thread.
 
 ### Uploads
 
@@ -177,7 +229,7 @@ them from the Lambda package.
 
 ## Database Schema
 
-Postgres (Supabase). Four tables plus two enums. `users.id` is shared with
+Postgres (Supabase). Seven tables plus two enums. `users.id` is shared with
 Supabase Auth (`auth.users.id`), so deleting the auth user cascades through the
 entire graph.
 
@@ -188,13 +240,20 @@ auth.users
    │ 1:1 (id)
    ▼
  users ──1:N──▶ items ──1:N──▶ requests ──1:N──▶ ratings
-   │                              ▲   ▲              ▲
-   └── borrower_id / owner_id ────┘   │   rater_id / ratee_id
-                                       └──────────────┘
+   │                              │ 1:1            ▲
+   │                              ▼          rater_id / ratee_id
+   │                         conversations ──1:N──▶ messages
+   │                              ▲   ▲                ▲
+   └── borrower_id / owner_id ────┘   │   sender_id ───┘
+   │                                  │
+   └── 1:N ──▶ device_push_tokens     │
+                                       (also item_id ──▶ items)
 ```
 
 Every foreign key is `ON DELETE CASCADE`, so removing a user cleanly removes
-their items, the requests they're party to, and the ratings they gave/received.
+their items, the requests they're party to, the ratings they gave/received, and
+their conversations, messages, and push tokens. A conversation belongs 1:1 to a
+request (`UNIQUE (request_id)`); deleting the request removes the thread.
 
 ### `users`
 
@@ -283,6 +342,61 @@ yet expose ratings routes.
 |              |                     | `UNIQUE (request_id, rater_id)`        |
 
 Index: `ratee_id`.
+
+### `conversations`
+
+One messaging thread per borrow request. `borrower_id`/`owner_id`/`item_id` are
+denormalized from the request so list queries don't need extra joins, and
+`last_message_at` powers thread ordering and is bumped on every send.
+
+| Column            | Type                 | Notes                                          |
+| ----------------- | -------------------- | ---------------------------------------------- |
+| `id`              | `uuid` PK            | `gen_random_uuid()`                            |
+| `request_id`      | `uuid` FK→`requests` | `NOT NULL`, cascade, `UNIQUE` (1:1 w/ request) |
+| `item_id`         | `uuid` FK→`items`    | `NOT NULL`, cascade                            |
+| `borrower_id`     | `uuid` FK→`users`    | `NOT NULL`, cascade                            |
+| `owner_id`        | `uuid` FK→`users`    | `NOT NULL`, cascade                            |
+| `last_message_at` | `timestamptz`        | Null until the first message; set on each send |
+| `created_at`      | `timestamptz`        | Default `now()`                                |
+| `updated_at`      | `timestamptz`        | Default `now()`                                |
+
+Indexes: `borrower_id`, `owner_id`, `request_id` (the latter via the unique
+constraint).
+
+### `messages`
+
+A single message within a conversation. `sender_id` is always the authenticated
+user from the bearer token, never a client-supplied id. `read_at` is set when the
+other participant marks the thread read.
+
+| Column            | Type                      | Notes                              |
+| ----------------- | ------------------------- | ---------------------------------- |
+| `id`              | `uuid` PK                 | `gen_random_uuid()`                |
+| `conversation_id` | `uuid` FK→`conversations` | `NOT NULL`, cascade                |
+| `sender_id`       | `uuid` FK→`users`         | `NOT NULL`, cascade                |
+| `body`            | `text`                    | `NOT NULL`, 1–2000 chars (app)     |
+| `created_at`      | `timestamptz`             | Default `now()`                    |
+| `read_at`         | `timestamptz`             | Null until read by the recipient   |
+
+Index: `(conversation_id, created_at)` for ascending thread reads and
+last-message lookups.
+
+### `device_push_tokens`
+
+Per-device push tokens for future notifications. Collected now so push delivery
+can be added later without a client change. Unique per `(user_id, token)`.
+
+| Column       | Type              | Notes                               |
+| ------------ | ----------------- | ----------------------------------- |
+| `id`         | `uuid` PK         | `gen_random_uuid()`                 |
+| `user_id`    | `uuid` FK→`users` | `NOT NULL`, cascade                 |
+| `token`      | `text`            | `NOT NULL`                          |
+| `platform`   | `text`            | `NOT NULL` (`ios`/`android`/`web`/`expo`) |
+| `created_at` | `timestamptz`     | Default `now()`                     |
+| `updated_at` | `timestamptz`     | Default `now()`                     |
+|              |                   | `UNIQUE (user_id, token)`           |
+
+Index: `user_id` (for looking up a recipient's devices at send time).
 
 ### Enums
 
@@ -411,6 +525,50 @@ CREATE TABLE IF NOT EXISTS ratings (
 );
 
 CREATE INDEX IF NOT EXISTS idx_ratings_ratee ON ratings (ratee_id);
+
+-- ── conversations ────────────────────────────────────────────────────────────
+-- One thread per borrow request. borrower/owner/item are denormalized from the
+-- request so list queries stay cheap. last_message_at drives thread ordering.
+CREATE TABLE IF NOT EXISTS conversations (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  request_id      UUID NOT NULL REFERENCES requests(id) ON DELETE CASCADE,
+  item_id         UUID NOT NULL REFERENCES items(id)    ON DELETE CASCADE,
+  borrower_id     UUID NOT NULL REFERENCES users(id)    ON DELETE CASCADE,
+  owner_id        UUID NOT NULL REFERENCES users(id)    ON DELETE CASCADE,
+  last_message_at TIMESTAMPTZ,
+  created_at      TIMESTAMPTZ DEFAULT now(),
+  updated_at      TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (request_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_convo_borrower ON conversations (borrower_id);
+CREATE INDEX IF NOT EXISTS idx_convo_owner    ON conversations (owner_id);
+
+-- ── messages ─────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS messages (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+  sender_id       UUID NOT NULL REFERENCES users(id)         ON DELETE CASCADE,
+  body            TEXT NOT NULL,
+  created_at      TIMESTAMPTZ DEFAULT now(),
+  read_at         TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_msg_convo_created ON messages (conversation_id, created_at);
+
+-- ── device_push_tokens ───────────────────────────────────────────────────────
+-- Collected now; push delivery (Expo/FCM) is wired in src/lib/push.ts later.
+CREATE TABLE IF NOT EXISTS device_push_tokens (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token      TEXT NOT NULL,
+  platform   TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (user_id, token)
+);
+
+CREATE INDEX IF NOT EXISTS idx_push_user ON device_push_tokens (user_id);
 ```
 
 ### Reconciling an older database

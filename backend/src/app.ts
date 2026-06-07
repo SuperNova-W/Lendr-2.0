@@ -5,6 +5,8 @@ import { itemsRouter }    from './routes/items';
 import { requestsRouter } from './routes/requests';
 import { uploadRouter }   from './routes/upload';
 import { statsRouter }    from './routes/stats';
+import { messagesRouter } from './routes/messages';
+import { pushRouter }     from './routes/push';
 import { errorHandler }   from './middleware/error';
 
 export const app = express();
@@ -18,5 +20,7 @@ app.use('/items',    itemsRouter);
 app.use('/requests', requestsRouter);
 app.use('/upload',   uploadRouter);
 app.use('/stats',    statsRouter);
+app.use('/messages', messagesRouter);
+app.use('/push',     pushRouter);
 
 app.use(errorHandler);

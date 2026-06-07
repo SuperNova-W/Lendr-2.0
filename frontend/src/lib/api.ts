@@ -229,6 +229,114 @@ export function updateRequestStatus(token: string, id: string, status: RequestAc
   });
 }
 
+// ── Messaging ───────────────────────────────────────────────────────────────────
+
+type RequestStatus = BorrowRequest['status'];
+
+// A single message in a thread. `read_at` is null until the other participant
+// opens the conversation.
+export interface Message {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  body: string;
+  created_at: string;
+  read_at: string | null;
+}
+
+// The bare conversation row, as returned by createConversation. The list/detail
+// endpoints return richer shapes (below) joined with item/participant context.
+export interface Conversation {
+  id: string;
+  request_id: string;
+  item_id: string;
+  borrower_id: string;
+  owner_id: string;
+  last_message_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Row shape for the conversation list. `other_user_*` is always the participant
+// who isn't the current user; `unread_count` counts their unread messages.
+export interface ConversationSummary {
+  id: string;
+  request_id: string;
+  item_id: string;
+  borrower_id: string;
+  owner_id: string;
+  last_message_at: string | null;
+  created_at: string;
+  item_title: string;
+  item_photos: string[];
+  request_status: RequestStatus;
+  other_user_id: string;
+  other_user_name: string;
+  other_user_avatar: string | null;
+  last_message_body: string | null;
+  last_message_created_at: string | null;
+  last_message_sender_id: string | null;
+  unread_count: number;
+}
+
+// A single conversation plus its messages (ascending) and request context.
+export interface ConversationDetail {
+  id: string;
+  request_id: string;
+  item_id: string;
+  borrower_id: string;
+  owner_id: string;
+  last_message_at: string | null;
+  created_at: string;
+  item_title: string;
+  item_photos: string[];
+  request_status: RequestStatus;
+  start_date: string;
+  end_date: string;
+  total_price: string;
+  other_user_id: string;
+  other_user_name: string;
+  other_user_avatar: string | null;
+  messages: Message[];
+}
+
+export function getConversations(token: string) {
+  return request<ConversationSummary[]>('/messages/conversations', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export function getConversation(token: string, id: string) {
+  return request<ConversationDetail>(`/messages/conversations/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// Create or return the conversation backing a request (idempotent server-side).
+export function createConversation(token: string, requestId: string) {
+  return request<Conversation>('/messages/conversations', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ request_id: requestId }),
+  });
+}
+
+export function sendMessage(token: string, conversationId: string, body: string) {
+  return request<Message>(`/messages/conversations/${conversationId}/messages`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ body }),
+  });
+}
+
+// Marks the other participant's messages as read; returns how many were updated.
+export function markConversationRead(token: string, conversationId: string) {
+  return request<{ updated: number }>(`/messages/conversations/${conversationId}/read`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
 // ── My stats ────────────────────────────────────────────────────────────────────
 // Single source of truth for the personal stat row shown on both Home and Profile,
 // so the two screens can never drift apart.

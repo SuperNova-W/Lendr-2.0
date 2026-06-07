@@ -24,6 +24,29 @@ export const updateRequestSchema = z.object({
   status: z.enum(['approved','declined','returned','cancelled']),
 });
 
+// ── Messaging ────────────────────────────────────────────────────────────────
+
+export const createConversationSchema = z.object({
+  request_id: z.string().uuid(),
+});
+
+// Trim first, then require 1..2000 chars so whitespace-only bodies are rejected
+// and the stored value is already normalized.
+export const sendMessageSchema = z.object({
+  body: z.string().trim().min(1, 'Message cannot be empty').max(2000),
+});
+
+// ── Push tokens (future notifications) ───────────────────────────────────────
+
+export const registerPushTokenSchema = z.object({
+  token:    z.string().min(1).max(512),
+  platform: z.enum(['ios', 'android', 'web', 'expo']),
+});
+
+export const deletePushTokenSchema = z.object({
+  token: z.string().min(1).max(512),
+});
+
 export const updateUserSchema = z.object({
   name:       z.string().min(1).max(128).optional(),
   campus:     z.string().max(128).optional(),
