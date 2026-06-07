@@ -90,6 +90,13 @@ Authorization: Bearer <supabase_access_token>
 | `PATCH` | `/messages/conversations/:id/read` | Yes | Mark the other participant's messages read. Returns `{ updated: number }`. Participant-only. |
 | `POST` | `/push/register` | Yes | Store/refresh a device push `{ token, platform }` for the current user. |
 | `DELETE` | `/push/token` | Yes | Remove a `{ token }` for the current user (e.g. on sign-out). |
+| `GET` | `/places/nearby?lat=&lng=&q=` | Yes | Proxy to Google Places (New). Returns `[{ id, name, address, lat, lng }]` of popular spots near the point; with `q`, runs a text search biased to it. Requires `GOOGLE_PLACES_API_KEY`; returns `503 PLACES_UNCONFIGURED` if unset. |
+
+**Shared locations in chat.** A "share location" message is a normal message row
+whose `body` is sentinel-encoded (`loc` + JSON `{ lat, lng, name?,
+address? }`) rather than a schema change — the message send/read routes are
+untouched. The client (`frontend/src/lib/location.ts`) encodes/decodes it and
+renders a map card; non-location bodies are plain text as before.
 
 There is currently no ratings API route. The `ratings` table exists in the
 schema for the intended post-borrow review flow, but the backend does not expose

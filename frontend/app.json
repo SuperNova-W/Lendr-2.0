@@ -42,7 +42,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Lendr uses your location only to filter listings by distance and to tag where an item is available. It is never shared with other users."
+          "locationWhenInUsePermission": "Lendr uses your location to filter listings by distance and, when you choose, to share a meetup spot with someone in chat."
         }
       ]
     ]

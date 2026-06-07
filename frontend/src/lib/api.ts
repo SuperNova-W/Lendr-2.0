@@ -337,6 +337,30 @@ export function markConversationRead(token: string, conversationId: string) {
   });
 }
 
+// ── Places ────────────────────────────────────────────────────────────────────
+
+export interface PlaceResult {
+  id: string;
+  name: string;
+  address: string;
+  lat: number;
+  lng: number;
+}
+
+// Nearby popular places around a point (campus meetup spots). Pass `q` to run a
+// text search instead. Backed by the server-side Google Places proxy, so a 503
+// with code PLACES_UNCONFIGURED means no API key is set on the backend.
+export function searchNearbyPlaces(
+  token: string,
+  params: { lat: number; lng: number; q?: string }
+) {
+  const qs = new URLSearchParams({ lat: String(params.lat), lng: String(params.lng) });
+  if (params.q) qs.set('q', params.q);
+  return request<PlaceResult[]>(`/places/nearby?${qs.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
 // ── My stats ────────────────────────────────────────────────────────────────────
 // Single source of truth for the personal stat row shown on both Home and Profile,
 // so the two screens can never drift apart.

@@ -16,6 +16,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
 import { getConversations, ConversationSummary } from '../lib/api';
+import { parseLocationMessage } from '../lib/location';
 
 // Compact, chat-list style timestamp: time today, weekday this week, else date.
 function fmtWhen(iso: string | null): string {
@@ -107,8 +108,11 @@ export const MessagesScreen: React.FC<any> = ({ navigation }) => {
             conversations.map(c => {
               const photo = c.item_photos?.[0] ?? null;
               const fromMe = c.last_message_sender_id === myId;
-              const preview = c.last_message_body
-                ? `${fromMe ? 'You: ' : ''}${c.last_message_body}`
+              const previewBody = c.last_message_body
+                ? (parseLocationMessage(c.last_message_body) ? '📍 Shared a location' : c.last_message_body)
+                : null;
+              const preview = previewBody
+                ? `${fromMe ? 'You: ' : ''}${previewBody}`
                 : 'No messages yet';
               const unread = c.unread_count > 0;
 

@@ -36,6 +36,16 @@ export const sendMessageSchema = z.object({
   body: z.string().trim().min(1, 'Message cannot be empty').max(2000),
 });
 
+// ── Places ───────────────────────────────────────────────────────────────────
+
+// Query params arrive as strings, so coerce lat/lng. An optional `q` switches the
+// proxy from a nearby search to a text search biased to the same point.
+export const placesNearbySchema = z.object({
+  lat: z.coerce.number().min(-90).max(90),
+  lng: z.coerce.number().min(-180).max(180),
+  q:   z.string().trim().max(120).optional(),
+});
+
 // ── Push tokens (future notifications) ───────────────────────────────────────
 
 export const registerPushTokenSchema = z.object({

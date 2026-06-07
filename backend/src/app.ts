@@ -8,6 +8,7 @@ import { uploadRouter }   from './routes/upload';
 import { statsRouter }    from './routes/stats';
 import { messagesRouter } from './routes/messages';
 import { pushRouter }     from './routes/push';
+import { placesRouter }   from './routes/places';
 import { errorHandler }   from './middleware/error';
 
 export const app = express();
@@ -42,5 +43,6 @@ app.use('/upload',   uploadRouter);
 app.use('/stats',    statsRouter);
 app.use('/messages', messagesRouter);
 app.use('/push',     pushRouter);
+app.use('/places',   placesRouter);
 
 app.use(errorHandler);

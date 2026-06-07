@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +25,13 @@ import {
   ConversationDetail,
   Message,
 } from '../lib/api';
+import { ShareLocationModal } from '../components/ShareLocationModal';
+import {
+  encodeLocationMessage,
+  parseLocationMessage,
+  mapsUrl,
+  SharedLocation,
+} from '../lib/location';
 
 const fmtTime = (iso: string) =>
   new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
@@ -44,6 +52,7 @@ export const MessageThreadScreen: React.FC<any> = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const [locOpen, setLocOpen] = useState(false);
 
   const scrollRef = useRef<ScrollView>(null);
 
@@ -78,6 +87,23 @@ export const MessageThreadScreen: React.FC<any> = ({ route, navigation }) => {
       setText('');
     } catch (err: any) {
       showAlert('Could not send', err.message ?? 'Something went wrong');
+    } finally {
+      setSending(false);
+    }
+  }
+
+  // A shared location is just a message whose body is sentinel-encoded — it goes
+  // through the same send endpoint, so threads, previews, and unread counts all
+  // work unchanged.
+  async function onPickLocation(loc: SharedLocation) {
+    setLocOpen(false);
+    if (!token || sending) return;
+    setSending(true);
+    try {
+      const msg = await sendMessage(token, conversationId, encodeLocationMessage(loc));
+      setMessages(prev => [...prev, msg]);
+    } catch (err: any) {
+      showAlert('Could not share location', err.message ?? 'Something went wrong');
     } finally {
       setSending(false);
     }
@@ -135,13 +161,31 @@ export const MessageThreadScreen: React.FC<any> = ({ route, navigation }) => {
             ) : (
               messages.map(m => {
                 const mine = m.sender_id === myId;
+                const loc = parseLocationMessage(m.body);
                 return (
                   <View
                     key={m.id}
                     style={[styles.bubbleRow, mine ? styles.bubbleRowMine : styles.bubbleRowTheirs]}
                   >
                     <View style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleTheirs]}>
-                      <Text style={[styles.bubbleText, mine && styles.bubbleTextMine]}>{m.body}</Text>
+                      {loc ? (
+                        <Pressable onPress={() => Linking.openURL(mapsUrl(loc))}>
+                          <View style={styles.locRow}>
+                            <Ionicons name="location" size={16} color={mine ? '#fff' : COLORS.amber} />
+                            <Text style={[styles.locName, mine && styles.bubbleTextMine]} numberOfLines={2}>
+                              {loc.name ?? 'Shared location'}
+                            </Text>
+                          </View>
+                          {loc.address ? (
+                            <Text style={[styles.locAddr, mine && styles.locAddrMine]} numberOfLines={2}>
+                              {loc.address}
+                            </Text>
+                          ) : null}
+                          <Text style={[styles.locOpen, mine && styles.locOpenMine]}>Open in Maps</Text>
+                        </Pressable>
+                      ) : (
+                        <Text style={[styles.bubbleText, mine && styles.bubbleTextMine]}>{m.body}</Text>
+                      )}
                       <Text style={[styles.bubbleTime, mine && styles.bubbleTimeMine]}>
                         {fmtTime(m.created_at)}
                       </Text>
@@ -155,6 +199,14 @@ export const MessageThreadScreen: React.FC<any> = ({ route, navigation }) => {
 
         {/* Composer */}
         <View style={[styles.composer, { paddingBottom: insets.bottom + 8 }]}>
+          <Pressable
+            style={styles.locBtn}
+            onPress={() => setLocOpen(true)}
+            disabled={sending}
+            hitSlop={6}
+          >
+            <Ionicons name="location-outline" size={22} color={COLORS.text2} />
+          </Pressable>
           <TextInput
             style={styles.input}
             value={text}
@@ -177,6 +229,12 @@ export const MessageThreadScreen: React.FC<any> = ({ route, navigation }) => {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+
+      <ShareLocationModal
+        visible={locOpen}
+        onClose={() => setLocOpen(false)}
+        onPick={onPickLocation}
+      />
     </View>
   );
 };
@@ -305,4 +363,41 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sendBtnDisabled: { backgroundColor: COLORS.text3 },
+  locBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: COLORS.surfaceInput,
+    borderWidth: 1,
+    borderColor: COLORS.borderInput,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Shared-location card (rendered inside a normal message bubble)
+  locRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  locName: {
+    flex: 1,
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 15,
+    color: COLORS.text1,
+  },
+  locAddr: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 13,
+    color: COLORS.text2,
+    marginTop: 3,
+  },
+  locAddrMine: { color: 'rgba(255,255,255,0.85)' },
+  locOpen: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 13,
+    color: COLORS.amber,
+    marginTop: 8,
+  },
+  locOpenMine: { color: '#fff', textDecorationLine: 'underline' },
 });
