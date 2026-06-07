@@ -8,7 +8,7 @@ import {
   Animated,
   Easing,
   Image,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../theme/colors';
@@ -38,10 +38,11 @@ const LINE_DURATION = 600;
 const HINT_DELAY    = 2200;
 const HINT_DURATION = 500;
 
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
-
 export const SplashScreen: React.FC<any> = ({ navigation, onDone }) => {
   const insets = useSafeAreaInsets();
+  // Live window size so the photo mosaic spreads across the real viewport
+  // (Dimensions.get() captured once at load mis-sized it on web).
+  const { width: SCREEN_W, height: SCREEN_H } = useWindowDimensions();
 
   // When used as a launch gate (App.tsx), onDone is provided. When used as a
   // navigation screen (signed-out flow), fall back to navigating to Onboarding.
