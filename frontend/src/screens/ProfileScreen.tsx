@@ -72,16 +72,23 @@ export const ProfileScreen: React.FC<any> = ({ navigation, route }) => {
   const load = useCallback(async () => {
     if (!token) return;
     try {
+      // Commit identity as soon as it's known. Doing this *before* the secondary
+      // fetches means a failure in any of them can't collapse the header back to
+      // placeholders ("there" / "Add your campus").
       const meRes = await getMe(token);
-      const [items, mine, computed] = await Promise.all([
-        getItems({ owner: meRes.id }),
-        getMyRequests(token),
-        getMyStats(token, meRes.id),
-      ]);
       setMe(meRes);
+
+      // Listings / borrows / earnings are non-critical — load them tolerantly so
+      // one failing round-trip degrades a single section instead of blanking the
+      // whole profile.
+      const [items, mine, computed] = await Promise.all([
+        getItems({ owner: meRes.id }).catch(() => [] as Item[]),
+        getMyRequests(token).catch(() => [] as MyRequest[]),
+        getMyStats(token, meRes.id).catch(() => null),
+      ]);
       setListings(items);
       setBorrows(mine);
-      setEarned(computed.earned);
+      if (computed) setEarned(computed.earned);
     } catch (err) {
       console.error(err);
     } finally {
@@ -145,9 +152,18 @@ export const ProfileScreen: React.FC<any> = ({ navigation, route }) => {
     ]);
   }
 
-  const name = me?.name ?? 'there';
+  // Fall back to the Supabase session's Google profile (same source HomeScreen
+  // uses) when the backend record hasn't loaded yet — otherwise a logged-in user
+  // briefly/erroneously shows the generic "there" placeholder as their name.
+  const meta = (session?.user?.user_metadata ?? {}) as {
+    full_name?: string;
+    name?: string;
+    avatar_url?: string;
+  };
+  const sessionName = meta.full_name ?? meta.name ?? session?.user?.email ?? null;
+  const name = me?.name || sessionName || 'there';
   const initial = name.charAt(0).toUpperCase();
-  const avatarUrl = me?.avatar_url ?? null;
+  const avatarUrl = me?.avatar_url ?? meta.avatar_url ?? null;
   const rating = Number(me?.rating_avg ?? 0);
 
   if (loading) {
