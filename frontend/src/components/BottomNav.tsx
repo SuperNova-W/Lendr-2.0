@@ -21,25 +21,27 @@ interface BottomNavProps {
 export const BottomNav: React.FC<BottomNavProps> = ({ activeNav, setActiveNav, paddingBottom }) => {
   return (
     <View style={[styles.nav, { paddingBottom: Math.max(paddingBottom, 20) }]}>
-      {NAV.map(n => {
-        const isActive = activeNav === n.id;
-        return (
-          <Pressable
-            key={n.id}
-            style={styles.navItem}
-            onPress={() => setActiveNav(n.id)}
-          >
-            <Ionicons
-              name={isActive ? n.iconActive : n.iconInactive}
-              size={24}
-              color={isActive ? COLORS.amber : COLORS.text3}
-            />
-            <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
-              {n.label}
-            </Text>
-          </Pressable>
-        );
-      })}
+      <View style={styles.inner}>
+        {NAV.map(n => {
+          const isActive = activeNav === n.id;
+          return (
+            <Pressable
+              key={n.id}
+              style={styles.navItem}
+              onPress={() => setActiveNav(n.id)}
+            >
+              <Ionicons
+                name={isActive ? n.iconActive : n.iconInactive}
+                size={24}
+                color={isActive ? COLORS.amber : COLORS.text3}
+              />
+              <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
+                {n.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 };
@@ -50,12 +52,18 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    alignItems: 'center',
     backgroundColor: COLORS.surface,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
     paddingTop: 10,
+  },
+  // Tabs cap + center on wide screens; full-width bar keeps the top border.
+  inner: {
+    width: '100%',
+    maxWidth: 480,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
   },
   navItem: {
     alignItems: 'center',

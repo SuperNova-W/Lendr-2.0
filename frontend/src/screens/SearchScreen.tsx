@@ -22,6 +22,7 @@ import { CATEGORIES } from '../data/dummyData';
 import { GridCard } from '../components/GridCard';
 import { BottomNav } from '../components/BottomNav';
 import { getItems, Item } from '../lib/api';
+import { useResponsive } from '../lib/responsive';
 
 type Sort = 'newest' | 'price_asc' | 'price_desc';
 
@@ -37,6 +38,9 @@ const RADII = [1, 3, 5, 10, 25]; // miles
 export const SearchScreen: React.FC<any> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const inputRef = useRef<TextInput>(null);
+  const { columns, contentMaxWidth } = useResponsive();
+  // Keep the existing 2-up grid on phones; add columns on wider screens.
+  const numColumns = Math.max(columns, 2);
 
   const [allItems, setAllItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
@@ -255,8 +259,10 @@ export const SearchScreen: React.FC<any> = ({ navigation }) => {
         <FlatList
           data={results}
           keyExtractor={item => item.id}
-          numColumns={2}
+          key={numColumns}
+          numColumns={numColumns}
           columnWrapperStyle={styles.gridRow}
+          style={{ width: '100%', maxWidth: contentMaxWidth, alignSelf: 'center' }}
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 100, paddingTop: 4 }}
           keyboardShouldPersistTaps="handled"
           onScrollBeginDrag={() => setShowSuggestions(false)}
@@ -385,6 +391,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
 
   headerWrap: {
+    width: '100%',
+    maxWidth: 1200,
+    alignSelf: 'center',
     paddingHorizontal: 20,
     paddingBottom: 8,
     backgroundColor: COLORS.bg,

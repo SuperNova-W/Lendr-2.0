@@ -89,7 +89,11 @@ export const ItemDetailScreen: React.FC<any> = ({ route, navigation }) => {
   const price = `$${Number(item.price_per_day)}/day`;
   const rating = Number(item.owner_rating);
   const ownerInitial = (item.owner_name ?? '?').charAt(0).toUpperCase();
-  const galleryWidth = width - 48; // matches imageContainer horizontal margins
+  // Cap the reading column on wide screens; gallery matches its inner width
+  // (imageContainer has 24px horizontal margins).
+  const DETAIL_MAX = 760;
+  const colWidth = Math.min(width, DETAIL_MAX);
+  const galleryWidth = colWidth - 48;
 
   return (
     <View style={styles.container}>
@@ -104,7 +108,11 @@ export const ItemDetailScreen: React.FC<any> = ({ route, navigation }) => {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={styles.screen} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView
+        style={styles.screen}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 120, width: '100%', maxWidth: DETAIL_MAX, alignSelf: 'center' }}
+      >
 
         {/* ── Hero photo gallery ── */}
         <View style={styles.imageContainer}>
@@ -309,6 +317,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    width: '100%',
+    maxWidth: 760,
+    alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -472,6 +483,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+    alignItems: 'center',
     backgroundColor: COLORS.surface,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
@@ -479,6 +491,8 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   borrowBtn: {
+    width: '100%',
+    maxWidth: 712,
     backgroundColor: COLORS.amber,
     borderRadius: 12,
     paddingVertical: 16,
