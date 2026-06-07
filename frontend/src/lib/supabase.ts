@@ -1,8 +1,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
+import { LogBox, Platform } from 'react-native';
 import { createClient } from '@supabase/supabase-js';
 
 const isWeb = Platform.OS === 'web';
+
+// On launch, supabase-js tries to refresh any persisted session. If the stored
+// refresh token has since been invalidated server-side (after a reinstall, a
+// token revocation, or the dev project being reset) the refresh fails and
+// GoTrueClient._recoverAndRefresh() logs the error via console.error before
+// self-healing by clearing the stale session. The recovery is correct — the only
+// fallout is a full-screen red LogBox overlay on startup. Suppress just that one
+// benign message so it no longer hijacks the screen; it still prints to the Metro
+// console. No-op on web (react-native-web's LogBox is a stub).
+LogBox.ignoreLogs(['Invalid Refresh Token']);
 
 // anon/public key — safe to expose in the client app
 // Find it in: Supabase Dashboard → Settings → API → anon public
