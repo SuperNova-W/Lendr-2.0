@@ -7,7 +7,7 @@ import { CATEGORIES } from '../data/dummyData';
 import { ListingCard } from '../components/ListingCard';
 import { FeaturedCard } from '../components/FeaturedCard';
 import { BottomNav } from '../components/BottomNav';
-import { getItems, getMyStats, Item, MyStats } from '../lib/api';
+import { getItems, getMyStats, getStats, Item, MyStats, Stats } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useResponsive } from '../lib/responsive';
 
@@ -21,6 +21,7 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
   const [activeNav, setActiveNav] = useState('home');
   const [items, setItems] = useState<Item[]>([]);
   const [stats, setStats] = useState<MyStats | null>(null);
+  const [campusStats, setCampusStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Display name / avatar come straight from the Supabase session
@@ -38,6 +39,10 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
+
+    // Campus-wide headline numbers — fetched independently so a failure here
+    // never blanks the listings/personal stats above.
+    getStats().then(setCampusStats).catch(console.error);
   }, [token, userId]);
 
   // Featured carousel = the 3 newest listings (API returns newest first)
@@ -115,6 +120,12 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
             <Text style={styles.statLabel}>Borrowed</Text>
           </View>
         </View>
+
+        {campusStats && (
+          <Text style={styles.campusLine}>
+            {campusStats.students.toLocaleString()} students · {campusStats.listings.toLocaleString()} listings on Lendr
+          </Text>
+        )}
 
         <View style={styles.divider} />
 
@@ -327,6 +338,15 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.4,
     marginTop: 2,
+  },
+  campusLine: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 12,
+    color: COLORS.text3,
+    textAlign: 'center',
+    marginHorizontal: 24,
+    marginTop: -16,
+    marginBottom: 24,
   },
   searchWrap: {
     paddingHorizontal: 24,

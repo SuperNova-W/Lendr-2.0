@@ -101,6 +101,25 @@ export function createItem(token: string, body: NewItem) {
   });
 }
 
+// Owner-only edit. Note: the PATCH response omits the joined owner_* display
+// fields, so callers showing those should merge the result over their existing
+// item rather than replacing it wholesale.
+export function updateItem(token: string, id: string, body: Partial<NewItem>) {
+  return request<Item>(`/items/${id}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  });
+}
+
+// Owner-only delete. Returns 204 (no body).
+export function deleteItem(token: string, id: string) {
+  return request<void>(`/items/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
 // Uploads a local image (file:// URI) as multipart form-data; returns its public URL.
 export async function uploadPhoto(token: string, uri: string): Promise<string> {
   const name = uri.split('/').pop() ?? `photo-${Date.now()}.jpg`;

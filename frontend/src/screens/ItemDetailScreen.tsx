@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { showAlert } from "../lib/alert";
 import {
   StyleSheet,
@@ -17,10 +17,11 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../theme/colors';
-import { Item, createRequest } from '../lib/api';
+import { Item, createRequest, getItem, updateItem, deleteItem } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
 const DURATIONS = [1, 2, 3, 7]; // rental lengths in days
+const EDIT_CATEGORIES = ['Textbooks', 'Tech', 'Dorm', 'Formal', 'Sports', 'Outdoors', 'Other'];
 const toISODate = (d: Date) => d.toISOString().slice(0, 10); // YYYY-MM-DD
 const addDays = (d: Date, n: number) => {
   const out = new Date(d);
@@ -32,7 +33,16 @@ export const ItemDetailScreen: React.FC<any> = ({ route, navigation }) => {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { session } = useAuth();
-  const item: Item = route.params.item;
+  const token = session?.access_token;
+
+  // The item can arrive two ways: the full object passed on navigation (the
+  // common in-app path), or just an `itemId` when we only have the id (e.g. a
+  // link). In the latter case we fetch it from the API.
+  const passedItem: Item | undefined = route.params?.item;
+  const itemId: string | undefined = route.params?.itemId ?? passedItem?.id;
+  const [item, setItem] = useState<Item | null>(passedItem ?? null);
+  const [loadingItem, setLoadingItem] = useState(!passedItem);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const [activePhoto, setActivePhoto] = useState(0);
 
@@ -43,7 +53,26 @@ export const ItemDetailScreen: React.FC<any> = ({ route, navigation }) => {
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const isOwnItem = session?.user?.id === item.owner_id;
+  // ── Owner edit form ──
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+  const [editPrice, setEditPrice] = useState('');
+  const [editCategory, setEditCategory] = useState('Tech');
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  // Fetch by id when we were given only an id (no full item object).
+  useEffect(() => {
+    if (passedItem || !itemId) return;
+    let alive = true;
+    setLoadingItem(true);
+    getItem(itemId)
+      .then(it => { if (alive) setItem(it); })
+      .catch(() => { if (alive) setLoadFailed(true); })
+      .finally(() => { if (alive) setLoadingItem(false); });
+    return () => { alive = false; };
+  }, [itemId, passedItem]);
 
   // Next 14 days as selectable start-date chips
   const dayOptions = useMemo(() => {
@@ -57,12 +86,41 @@ export const ItemDetailScreen: React.FC<any> = ({ route, navigation }) => {
     });
   }, []);
 
+  const isOwnItem = !!item && session?.user?.id === item.owner_id;
+
+  // ── Loading / not-found guards (hooks above must stay unconditional) ──
+  if (loadingItem) {
+    return (
+      <View style={[styles.container, { alignItems: 'center', justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color={COLORS.amber} />
+      </View>
+    );
+  }
+  if (!item) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={[styles.header, { paddingTop: 10 }]}>
+          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <Ionicons name="chevron-back" size={20} color={COLORS.text1} />
+          </Pressable>
+          <Text style={styles.headerTitle}>Item Details</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.missingWrap}>
+          <Ionicons name="alert-circle-outline" size={40} color={COLORS.text3} />
+          <Text style={styles.missingText}>
+            {loadFailed ? "This item couldn't be loaded or no longer exists." : 'Item not found.'}
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   const startDate = addDays(new Date(), startOffset);
   const endDate = addDays(startDate, duration);
   const totalCost = Number(item.price_per_day) * duration;
 
   async function submitRequest() {
-    const token = session?.access_token;
     if (!token) {
       showAlert('Sign in required', 'Please sign in again to request this item.');
       return;
@@ -70,18 +128,82 @@ export const ItemDetailScreen: React.FC<any> = ({ route, navigation }) => {
     setSubmitting(true);
     try {
       await createRequest(token, {
-        item_id: item.id,
+        item_id: item!.id,
         start_date: toISODate(startDate),
         end_date: toISODate(endDate),
         message: message.trim() || undefined,
       });
       setSheetOpen(false);
       setMessage('');
-      showAlert('Request sent', `Your request to borrow "${item.title}" was sent to ${item.owner_name}.`);
+      showAlert('Request sent', `Your request to borrow "${item!.title}" was sent to ${item!.owner_name}.`);
     } catch (err: any) {
       showAlert('Could not send request', err.message ?? 'Something went wrong');
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  function openEdit() {
+    if (!item) return;
+    setEditTitle(item.title);
+    setEditDesc(item.description ?? '');
+    setEditPrice(String(Number(item.price_per_day)));
+    setEditCategory(item.category);
+    setEditOpen(true);
+  }
+
+  async function saveEdit() {
+    if (!token || !item) return;
+    const title = editTitle.trim();
+    const priceNum = Number(editPrice);
+    if (title.length < 3) {
+      showAlert('Title too short', 'Give your listing a title of at least 3 characters.');
+      return;
+    }
+    if (!Number.isFinite(priceNum) || priceNum <= 0) {
+      showAlert('Invalid price', 'Enter a daily price greater than 0.');
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      const updated = await updateItem(token, item.id, {
+        title,
+        description: editDesc.trim() || undefined,
+        price_per_day: priceNum,
+        category: editCategory,
+      });
+      // PATCH omits the joined owner_* fields — merge over the existing item so
+      // the lender card doesn't lose its name/avatar/rating.
+      setItem(prev => ({ ...(prev as Item), ...updated }));
+      setEditOpen(false);
+    } catch (err: any) {
+      showAlert('Could not save', err.message ?? 'Something went wrong');
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+
+  function confirmDelete() {
+    if (!item) return;
+    showAlert(
+      'Delete listing?',
+      `This permanently removes "${item.title}". This can't be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: doDelete },
+      ]
+    );
+  }
+
+  async function doDelete() {
+    if (!token || !item) return;
+    setDeleting(true);
+    try {
+      await deleteItem(token, item.id);
+      navigation.goBack();
+    } catch (err: any) {
+      showAlert('Could not delete', err.message ?? 'Something went wrong');
+      setDeleting(false);
     }
   }
 
@@ -198,19 +320,42 @@ export const ItemDetailScreen: React.FC<any> = ({ route, navigation }) => {
 
       {/* ── Bottom Action ── */}
       <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-        <Pressable
-          style={[styles.borrowBtn, (!item.is_available || isOwnItem) && styles.borrowBtnDisabled]}
-          disabled={!item.is_available || isOwnItem}
-          onPress={() => setSheetOpen(true)}
-        >
-          <Text style={styles.borrowBtnText}>
-            {isOwnItem
-              ? 'This is your item'
-              : item.is_available
-              ? 'Request to Borrow'
-              : 'Currently Unavailable'}
-          </Text>
-        </Pressable>
+        {isOwnItem ? (
+          <View style={styles.ownerActions}>
+            <Pressable
+              style={[styles.ownerBtn, styles.editItemBtn]}
+              onPress={openEdit}
+              disabled={deleting}
+            >
+              <Ionicons name="create-outline" size={18} color="#fff" />
+              <Text style={styles.editItemBtnText}>Edit</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.ownerBtn, styles.deleteItemBtn, deleting && styles.borrowBtnDisabled]}
+              onPress={confirmDelete}
+              disabled={deleting}
+            >
+              {deleting ? (
+                <ActivityIndicator color={COLORS.red} />
+              ) : (
+                <>
+                  <Ionicons name="trash-outline" size={18} color={COLORS.red} />
+                  <Text style={styles.deleteItemBtnText}>Delete</Text>
+                </>
+              )}
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            style={[styles.borrowBtn, !item.is_available && styles.borrowBtnDisabled]}
+            disabled={!item.is_available}
+            onPress={() => setSheetOpen(true)}
+          >
+            <Text style={styles.borrowBtnText}>
+              {item.is_available ? 'Request to Borrow' : 'Currently Unavailable'}
+            </Text>
+          </Pressable>
+        )}
       </View>
 
       {/* ── Request sheet ── */}
@@ -300,6 +445,86 @@ export const ItemDetailScreen: React.FC<any> = ({ route, navigation }) => {
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={styles.borrowBtnText}>Send Request</Text>
+            )}
+          </Pressable>
+        </View>
+      </Modal>
+
+      {/* ── Owner edit sheet ── */}
+      <Modal
+        visible={editOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setEditOpen(false)}
+      >
+        <Pressable style={styles.sheetBackdrop} onPress={() => setEditOpen(false)} />
+        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 20) }]}>
+          <View style={styles.sheetHandle} />
+
+          <View style={styles.sheetHeader}>
+            <Text style={styles.sheetTitle}>Edit Listing</Text>
+            <Pressable onPress={() => setEditOpen(false)} hitSlop={10}>
+              <Ionicons name="close" size={22} color={COLORS.text2} />
+            </Pressable>
+          </View>
+
+          <Text style={styles.sheetLabel}>Title</Text>
+          <TextInput
+            style={styles.editInput}
+            placeholder="What are you lending?"
+            placeholderTextColor={COLORS.text3}
+            value={editTitle}
+            onChangeText={setEditTitle}
+            maxLength={160}
+          />
+
+          <Text style={styles.sheetLabel}>Price per day ($)</Text>
+          <TextInput
+            style={styles.editInput}
+            placeholder="0"
+            placeholderTextColor={COLORS.text3}
+            value={editPrice}
+            onChangeText={setEditPrice}
+            keyboardType="decimal-pad"
+            maxLength={6}
+          />
+
+          <Text style={styles.sheetLabel}>Category</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+            {EDIT_CATEGORIES.map(cat => {
+              const active = cat === editCategory;
+              return (
+                <Pressable
+                  key={cat}
+                  style={[styles.chip, active && styles.chipActive]}
+                  onPress={() => setEditCategory(cat)}
+                >
+                  <Text style={[styles.chipText, active && styles.chipTextActive]}>{cat}</Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+
+          <Text style={styles.sheetLabel}>Description</Text>
+          <TextInput
+            style={styles.messageInput}
+            placeholder="Add details about your item…"
+            placeholderTextColor={COLORS.text3}
+            value={editDesc}
+            onChangeText={setEditDesc}
+            multiline
+            maxLength={500}
+          />
+
+          <Pressable
+            style={[styles.submitBtn, { marginTop: 20 }, savingEdit && styles.borrowBtnDisabled]}
+            onPress={saveEdit}
+            disabled={savingEdit}
+          >
+            {savingEdit ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.borrowBtnText}>Save Changes</Text>
             )}
           </Pressable>
         </View>
@@ -507,6 +732,73 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#fff',
     letterSpacing: 0.1,
+  },
+
+  // ── Owner actions (Edit / Delete) ──
+  ownerActions: {
+    width: '100%',
+    maxWidth: 712,
+    flexDirection: 'row',
+    gap: 12,
+  },
+  ownerBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderRadius: 12,
+    paddingVertical: 16,
+  },
+  editItemBtn: {
+    backgroundColor: COLORS.amber,
+  },
+  editItemBtnText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 16,
+    color: '#fff',
+    letterSpacing: 0.1,
+  },
+  deleteItemBtn: {
+    backgroundColor: COLORS.redLight,
+    borderWidth: 1,
+    borderColor: COLORS.red,
+  },
+  deleteItemBtnText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 16,
+    color: COLORS.red,
+    letterSpacing: 0.1,
+  },
+
+  // ── Not-found state ──
+  missingWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 14,
+    paddingHorizontal: 40,
+  },
+  missingText: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 15,
+    color: COLORS.text3,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+
+  // ── Edit inputs ──
+  editInput: {
+    height: 48,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 15,
+    color: COLORS.text1,
+    backgroundColor: COLORS.surface,
+    marginBottom: 4,
   },
 
   // ── Request sheet ──
