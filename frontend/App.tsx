@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Platform, View, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -79,39 +78,15 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      {/* On web, constrain the mobile-first UI to a centered phone-width column
-          so layouts don't stretch across a desktop viewport. No-op on native. */}
-      <View style={styles.root}>
-        <View style={styles.appShell}>
-          {!splashDone ? (
-            <SplashScreen onDone={() => setSplashDone(true)} />
-          ) : (
-            <AuthProvider>
-              <NavigationContainer>
-                <Navigator />
-              </NavigationContainer>
-            </AuthProvider>
-          )}
-        </View>
-      </View>
+      {!splashDone ? (
+        <SplashScreen onDone={() => setSplashDone(true)} />
+      ) : (
+        <AuthProvider>
+          <NavigationContainer>
+            <Navigator />
+          </NavigationContainer>
+        </AuthProvider>
+      )}
     </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    ...Platform.select({
-      web: { alignItems: 'center', backgroundColor: '#0F1115' },
-      default: {},
-    }),
-  },
-  appShell: {
-    flex: 1,
-    width: '100%',
-    ...Platform.select({
-      web: { maxWidth: 480, backgroundColor: '#FFFFFF' },
-      default: {},
-    }),
-  },
-});

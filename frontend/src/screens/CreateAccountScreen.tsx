@@ -18,6 +18,7 @@ import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated'
 import { COLORS } from '../theme/colors';
 import { SPLASH_PHOTOS } from '../data/dummyData';
 import { useAuth } from '../context/AuthContext';
+import { useResponsive } from '../lib/responsive';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -30,6 +31,7 @@ const FEATURES: { icon: IoniconsName; text: string }[] = [
 export const CreateAccountScreen: React.FC<any> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
+  const { isDesktop } = useResponsive();
   const { signInWithGoogle } = useAuth();
   const [googleLoading, setGoogleLoading] = useState(false);
 
@@ -46,6 +48,90 @@ export const CreateAccountScreen: React.FC<any> = ({ navigation }) => {
     } finally {
       setGoogleLoading(false);
     }
+  }
+
+  // Shared CTA block (brand → features → Google button → legal).
+  const cta = (
+    <>
+      <View style={styles.brandRow}>
+        <Text style={styles.logo}>Lendr</Text>
+        <Text style={styles.logoDot}>.</Text>
+      </View>
+
+      <Text style={styles.headline}>The campus marketplace for borrowing.</Text>
+
+      <View style={styles.features}>
+        {FEATURES.map(f => (
+          <View key={f.text} style={styles.featureRow}>
+            <View style={styles.featureIcon}>
+              <Ionicons name={f.icon} size={16} color={COLORS.amber} />
+            </View>
+            <Text style={styles.featureText}>{f.text}</Text>
+          </View>
+        ))}
+      </View>
+
+      <Pressable
+        style={({ pressed }) => [styles.googleBtn, pressed && styles.googleBtnPressed]}
+        onPress={handleGoogleSignIn}
+        disabled={googleLoading}
+      >
+        {googleLoading ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <>
+            <View style={styles.googleGlyph}>
+              <Ionicons name="logo-google" size={16} color={COLORS.text1} />
+            </View>
+            <Text style={styles.googleBtnText}>Continue with Google</Text>
+          </>
+        )}
+      </Pressable>
+
+      <View style={styles.eduRow}>
+        <Ionicons name="shield-checkmark" size={13} color={COLORS.green} />
+        <Text style={styles.eduText}>Students only · verified by your .edu email</Text>
+      </View>
+
+      <Text style={styles.legal}>
+        By continuing you agree to our{' '}
+        <Text style={styles.legalLink} onPress={() => navigation.navigate('Legal', { kind: 'terms' })}>
+          Terms
+        </Text>{' '}
+        and{' '}
+        <Text style={styles.legalLink} onPress={() => navigation.navigate('Legal', { kind: 'privacy' })}>
+          Privacy Policy
+        </Text>
+        .
+      </Text>
+    </>
+  );
+
+  // ── Desktop: split-screen hero (photo collage left, sign-in right) ──
+  if (isDesktop) {
+    return (
+      <View style={styles.deskRow}>
+        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        <View style={styles.deskVisual}>
+          <View style={styles.deskHero}>
+            <View style={[styles.heroCol, { flex: 1 }]}>
+              <Image source={{ uri: SPLASH_PHOTOS[0] }} style={[styles.heroImg, { height: 210 }]} />
+              <Image source={{ uri: SPLASH_PHOTOS[2] }} style={[styles.heroImg, { height: 150 }]} />
+              <Image source={{ uri: SPLASH_PHOTOS[4] }} style={[styles.heroImg, { height: 180 }]} />
+            </View>
+            <View style={[styles.heroCol, { flex: 1, marginTop: 40 }]}>
+              <Image source={{ uri: SPLASH_PHOTOS[1] }} style={[styles.heroImg, { height: 170 }]} />
+              <Image source={{ uri: SPLASH_PHOTOS[3] }} style={[styles.heroImg, { height: 210 }]} />
+              <Image source={{ uri: SPLASH_PHOTOS[5] }} style={[styles.heroImg, { height: 150 }]} />
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.deskContentPane}>
+          <View style={styles.deskContentInner}>{cta}</View>
+        </View>
+      </View>
+    );
   }
 
   return (
@@ -284,5 +370,36 @@ const styles = StyleSheet.create({
   legalLink: {
     fontFamily: 'Inter_600SemiBold',
     color: COLORS.amber,
+  },
+
+  // ── Desktop split-hero ──
+  deskRow: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+  },
+  deskVisual: {
+    flex: 1.1,
+    backgroundColor: COLORS.surfaceSub,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 56,
+    overflow: 'hidden',
+  },
+  deskHero: {
+    flexDirection: 'row',
+    gap: 16,
+    width: '100%',
+    maxWidth: 460,
+  },
+  deskContentPane: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 48,
+  },
+  deskContentInner: {
+    width: '100%',
+    maxWidth: 420,
   },
 });

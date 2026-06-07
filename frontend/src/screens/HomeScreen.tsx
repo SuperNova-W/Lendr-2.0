@@ -9,9 +9,11 @@ import { FeaturedCard } from '../components/FeaturedCard';
 import { BottomNav } from '../components/BottomNav';
 import { getItems, getMyStats, Item, MyStats } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { useResponsive } from '../lib/responsive';
 
 export const HomeScreen: React.FC<any> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const { width, columns, contentMaxWidth } = useResponsive();
   const { session } = useAuth();
   const token = session?.access_token;
   const userId = session?.user?.id;
@@ -48,6 +50,14 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
 
   const showFeatured = activeCategory === 'All';
 
+  // Grid sizing: the content column is capped + centered on wide screens, and
+  // cards tile `columns` per row within it.
+  const GUTTER = 12;
+  const HPAD = 24;
+  const colWidth = Math.min(width, contentMaxWidth);
+  const cardWidth: number | string =
+    columns === 1 ? '100%' : (colWidth - HPAD * 2 - GUTTER * (columns - 1)) / columns;
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.bg} />
@@ -55,7 +65,13 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
       <ScrollView
         style={styles.screen}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 100 }}
+        contentContainerStyle={{
+          paddingTop: insets.top,
+          paddingBottom: 100,
+          width: '100%',
+          maxWidth: contentMaxWidth,
+          alignSelf: 'center',
+        }}
       >
         {/* ── Header ── */}
         <View style={styles.header}>
@@ -173,9 +189,9 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
           </Text>
         </View>
 
-        <View style={styles.listings}>
+        <View style={[styles.listings, { gap: GUTTER }]}>
           {loading ? (
-            <ActivityIndicator size="large" color={COLORS.amber} style={{ paddingVertical: 48 }} />
+            <ActivityIndicator size="large" color={COLORS.amber} style={{ paddingVertical: 48, width: '100%' }} />
           ) : filtered.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="search-outline" size={32} color={COLORS.text3} />
@@ -183,17 +199,18 @@ export const HomeScreen: React.FC<any> = ({ navigation }) => {
             </View>
           ) : (
             filtered.map(item => (
-              <ListingCard
-                key={item.id}
-                item={{
-                  title: item.title,
-                  desc: item.description ?? '',
-                  price: `$${Number(item.price_per_day)}/day`,
-                  tag: item.category,
-                  photoUrl: item.photos[0] ?? undefined,
-                }}
-                onPress={() => navigation.navigate('ItemDetail', { item })}
-              />
+              <View key={item.id} style={{ width: cardWidth as any }}>
+                <ListingCard
+                  item={{
+                    title: item.title,
+                    desc: item.description ?? '',
+                    price: `$${Number(item.price_per_day)}/day`,
+                    tag: item.category,
+                    photoUrl: item.photos[0] ?? undefined,
+                  }}
+                  onPress={() => navigation.navigate('ItemDetail', { item })}
+                />
+              </View>
             ))
           )}
         </View>
@@ -391,9 +408,11 @@ const styles = StyleSheet.create({
   },
   listings: {
     paddingHorizontal: 24,
-    gap: 10,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   emptyState: {
+    width: '100%',
     paddingVertical: 48,
     alignItems: 'center',
     gap: 10,
