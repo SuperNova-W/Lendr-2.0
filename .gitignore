@@ -5,6 +5,9 @@ node_modules/
 dist/
 build/
 
+# Serverless Framework build artifacts (bake resolved secrets into state/CFN templates)
+.serverless/
+
 # Environment files
 .env
 .env.local
