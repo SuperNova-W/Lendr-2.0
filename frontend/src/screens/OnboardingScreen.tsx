@@ -29,7 +29,7 @@ const SLIDES = [
   {
     photos: [
       'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=300&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1617083277720-12dd5fdbf73c?w=300&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=300&q=80&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=300&q=80&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=300&q=80&auto=format&fit=crop',
     ],

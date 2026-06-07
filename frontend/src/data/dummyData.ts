@@ -69,7 +69,7 @@ export const LISTINGS = [
     desc: 'Two Wilson rackets + balls. Rec center courts are free!',
     price: '$5/day',
     tag: 'Sports',
-    photoUrl: 'https://images.unsplash.com/photo-1617083277720-12dd5fdbf73c?w=400&q=80&auto=format&fit=crop',
+    photoUrl: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400&q=80&auto=format&fit=crop',
   },
   {
     id: 9,
@@ -102,7 +102,7 @@ export const SPLASH_PHOTOS = [
   'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=240&q=80&auto=format&fit=crop',
   'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=240&q=80&auto=format&fit=crop',
   'https://images.unsplash.com/photo-1561154464-82e9adf32764?w=240&q=80&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1617083277720-12dd5fdbf73c?w=240&q=80&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=240&q=80&auto=format&fit=crop',
   'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=240&q=80&auto=format&fit=crop',
   'https://images.unsplash.com/photo-1585664811087-47f65abbad64?w=240&q=80&auto=format&fit=crop',
   'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=240&q=80&auto=format&fit=crop',
