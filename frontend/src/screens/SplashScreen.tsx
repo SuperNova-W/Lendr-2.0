@@ -16,15 +16,18 @@ import { SPLASH_PHOTOS } from '../data/dummyData';
 
 // Tile positions mirror the design's hand-arranged mosaic — varied sizes,
 // rotations, and delays so the entrance feels composed rather than gridded.
+// xPct/yPct are the tile's CENTER as a fraction of the viewport, so values near
+// 0 or 1 sit on (and bleed slightly off) the edges, filling the corners at any
+// size. The center is left clear for the wordmark.
 const TILES = [
-  { xPct: -0.02, yPct: 0.08, size: 110, rot: -8,  delay: 120 },
-  { xPct:  0.64, yPct: 0.04, size: 96,  rot:  6,  delay: 190 },
-  { xPct:  0.08, yPct: 0.64, size: 86,  rot:  5,  delay: 260 },
-  { xPct:  0.70, yPct: 0.70, size: 100, rot: -7,  delay: 330 },
-  { xPct:  0.78, yPct: 0.38, size: 72,  rot: 11,  delay: 400 },
-  { xPct: -0.04, yPct: 0.38, size: 78,  rot: -4,  delay: 470 },
-  { xPct:  0.36, yPct: 0.78, size: 64,  rot:  8,  delay: 540 },
-  { xPct:  0.38, yPct: -0.02, size: 64, rot: -6,  delay: 610 },
+  { xPct: 0.05, yPct: 0.12, size: 110, rot: -8, delay: 120 }, // top-left
+  { xPct: 0.40, yPct: 0.06, size: 72,  rot: 11, delay: 190 }, // top-center
+  { xPct: 0.94, yPct: 0.10, size: 96,  rot:  6, delay: 260 }, // top-right
+  { xPct: 0.05, yPct: 0.52, size: 86,  rot:  5, delay: 330 }, // left-mid
+  { xPct: 0.95, yPct: 0.48, size: 100, rot: -7, delay: 400 }, // right-mid
+  { xPct: 0.10, yPct: 0.90, size: 78,  rot: -4, delay: 470 }, // bottom-left
+  { xPct: 0.58, yPct: 0.94, size: 64,  rot:  8, delay: 540 }, // bottom-center
+  { xPct: 0.92, yPct: 0.90, size: 64,  rot: -6, delay: 610 }, // bottom-right
 ];
 
 const SPLASH_DURATION = 3600;
@@ -137,8 +140,8 @@ export const SplashScreen: React.FC<any> = ({ navigation, onDone }) => {
                 {
                   width: tile.size,
                   height: tile.size,
-                  left: tile.xPct * SCREEN_W,
-                  top: tile.yPct * SCREEN_H,
+                  left: tile.xPct * SCREEN_W - tile.size / 2,
+                  top: tile.yPct * SCREEN_H - tile.size / 2,
                   borderRadius: tile.size > 90 ? 22 : 18,
                   opacity: progress,
                   transform: [
