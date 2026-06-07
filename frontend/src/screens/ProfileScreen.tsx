@@ -165,7 +165,7 @@ export const ProfileScreen: React.FC<any> = ({ navigation, route }) => {
       <ScrollView
         style={styles.screen}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 110 }}
+        contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 110, width: '100%', maxWidth: 640, alignSelf: 'center' }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.amber} />}
       >
         {/* ── Header ── */}

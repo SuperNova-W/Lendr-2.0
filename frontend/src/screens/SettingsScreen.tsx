@@ -117,7 +117,7 @@ export const SettingsScreen: React.FC<any> = ({ navigation }) => {
       <ScrollView
         style={styles.screen}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 48 }}
+        contentContainerStyle={{ paddingBottom: 48, width: "100%", maxWidth: 640, alignSelf: "center" }}
       >
 
         <SectionLabel label="Account" />

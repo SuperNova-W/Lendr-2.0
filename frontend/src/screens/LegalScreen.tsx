@@ -82,7 +82,7 @@ export const LegalScreen: React.FC<any> = ({ navigation, route }) => {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ padding: 24, paddingBottom: insets.bottom + 40 }}
+        contentContainerStyle={{ padding: 24, paddingBottom: insets.bottom + 40, width: "100%", maxWidth: 720, alignSelf: "center" }}
       >
         <Text style={styles.updated}>Last updated {LAST_UPDATED}</Text>
         {sections.map(s => (

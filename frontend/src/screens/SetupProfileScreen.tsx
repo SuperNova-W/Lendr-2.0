@@ -343,7 +343,7 @@ export const SetupProfileScreen: React.FC = () => {
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={insets.top + 50}>
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 28, paddingTop: 24 }}
+          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 28, paddingTop: 24, width: "100%", maxWidth: 560, alignSelf: "center" }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >

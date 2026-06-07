@@ -21,7 +21,7 @@ export const MessagesScreen: React.FC<any> = ({ navigation }) => {
       </View>
 
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: insets.bottom + 24 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: insets.bottom + 24, width: "100%", maxWidth: 640, alignSelf: "center" }}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.empty}>

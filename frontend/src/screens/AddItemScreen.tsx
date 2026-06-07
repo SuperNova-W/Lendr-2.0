@@ -157,7 +157,7 @@ export const AddItemScreen: React.FC<any> = ({ navigation }) => {
       >
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ padding: 24, paddingBottom: insets.bottom + 120 }}
+          contentContainerStyle={{ padding: 24, paddingBottom: insets.bottom + 120, width: "100%", maxWidth: 640, alignSelf: "center" }}
           keyboardShouldPersistTaps="handled"
         >
           {/* Photos */}

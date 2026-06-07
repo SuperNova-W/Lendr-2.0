@@ -131,7 +131,7 @@ export const RequestsScreen: React.FC<any> = ({ navigation }) => {
         <ActivityIndicator size="large" color={COLORS.amber} style={{ marginTop: 60 }} />
       ) : (
         <ScrollView
-          contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 100 }}
+          contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 100, width: "100%", maxWidth: 640, alignSelf: "center" }}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.amber} />}
         >
