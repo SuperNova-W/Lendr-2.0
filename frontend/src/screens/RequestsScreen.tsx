@@ -22,6 +22,7 @@ import {
   getMyRequests,
   getIncomingRequests,
   updateRequestStatus,
+  createConversation,
   MyRequest,
   IncomingRequest,
   RequestAction,
@@ -52,6 +53,7 @@ export const RequestsScreen: React.FC<any> = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [actingId, setActingId] = useState<string | null>(null);
+  const [openingChatId, setOpeningChatId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -92,6 +94,25 @@ export const RequestsScreen: React.FC<any> = ({ navigation }) => {
       showAlert('Action failed', err.message ?? 'Something went wrong');
     } finally {
       setActingId(null);
+    }
+  }
+
+  // Open (or create, server-side idempotent) the chat backing this request and
+  // jump straight into the thread. Used by the borrower's "Message owner" button.
+  async function openChat(req: MyRequest) {
+    if (!token) return;
+    setOpeningChatId(req.id);
+    try {
+      const convo = await createConversation(token, req.id);
+      navigation.navigate('MessageThread', {
+        conversationId: convo.id,
+        otherName: req.owner_name,
+        itemTitle: req.item_title,
+      });
+    } catch (err: any) {
+      showAlert('Couldn’t open chat', err.message ?? 'Something went wrong');
+    } finally {
+      setOpeningChatId(null);
     }
   }
 
@@ -156,6 +177,7 @@ export const RequestsScreen: React.FC<any> = ({ navigation }) => {
               const photo = req.item_photos?.[0] ?? null;
               const status = STATUS_COLORS[req.status] ?? STATUS_COLORS.pending;
               const busy = actingId === req.id;
+              const chatBusy = openingChatId === req.id;
 
               return (
                 <View key={req.id} style={styles.card}>
@@ -188,15 +210,31 @@ export const RequestsScreen: React.FC<any> = ({ navigation }) => {
                   {req.message ? <Text style={styles.message}>“{req.message}”</Text> : null}
 
                   {/* Actions */}
-                  {isSent && req.status === 'pending' && (
+                  {isSent && (
                     <View style={styles.actionRow}>
                       <Pressable
-                        style={[styles.btn, styles.btnGhost]}
-                        disabled={busy}
-                        onPress={() => act(req.id, 'cancelled')}
+                        style={[styles.btn, styles.btnPrimary]}
+                        disabled={chatBusy}
+                        onPress={() => openChat(req as MyRequest)}
                       >
-                        {busy ? <ActivityIndicator size="small" color={COLORS.text2} /> : <Text style={styles.btnGhostText}>Cancel Request</Text>}
+                        {chatBusy ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <View style={styles.btnInline}>
+                            <Ionicons name="chatbubble-ellipses-outline" size={16} color="#fff" />
+                            <Text style={styles.btnPrimaryText}>Message owner</Text>
+                          </View>
+                        )}
                       </Pressable>
+                      {req.status === 'pending' && (
+                        <Pressable
+                          style={[styles.btn, styles.btnGhost]}
+                          disabled={busy}
+                          onPress={() => act(req.id, 'cancelled')}
+                        >
+                          {busy ? <ActivityIndicator size="small" color={COLORS.text2} /> : <Text style={styles.btnGhostText}>Cancel Request</Text>}
+                        </Pressable>
+                      )}
                     </View>
                   )}
 
@@ -381,6 +419,11 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_600SemiBold',
     fontSize: 14,
     color: '#fff',
+  },
+  btnInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   btnGhost: {
     backgroundColor: COLORS.surface,
