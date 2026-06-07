@@ -10,6 +10,10 @@ provider:
   region: us-east-1
   timeout: 29        # API Gateway HTTP API max is 29s
   memorySize: 256
+  # NOTE: CORS is handled in the Express app (src/app.ts), not here. API Gateway
+  # HTTP API only allows an exact origin or a bare '*' in allowedOrigins — it
+  # rejects subdomain wildcards — so per-origin matching (Netlify deploy-previews
+  # + localhost) is done in app-level middleware instead.
   environment:
     DATABASE_URL: ${env:DATABASE_URL}
     SUPABASE_URL: ${env:SUPABASE_URL}
