@@ -7,6 +7,10 @@ export const COLORS = {
   surfaceSub: '#F4F4F8',
   surfaceInput: '#FAFAFC',
 
+  // Web-only page backdrop shown around the centered app column on wide screens.
+  // On phones the white app surface fills the screen, so this never shows.
+  pageBackdrop: '#EBEDF1',
+
   // Primary — near-black ink
   amber: '#0F1115',
   amberLight: '#F4F4F8',

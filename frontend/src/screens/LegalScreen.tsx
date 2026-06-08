@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, ScrollView, Pressable, StatusBar } from 'react-
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../theme/colors';
+import { SHELL_MAX } from '../lib/responsive';
 
 type Section = { heading: string; body: string };
 
@@ -82,7 +83,7 @@ export const LegalScreen: React.FC<any> = ({ navigation, route }) => {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ padding: 24, paddingBottom: insets.bottom + 40, width: "100%", maxWidth: 720, alignSelf: "center" }}
+        contentContainerStyle={{ padding: 24, paddingBottom: insets.bottom + 40, width: "100%" }}
       >
         <Text style={styles.updated}>Last updated {LAST_UPDATED}</Text>
         {sections.map(s => (
@@ -100,7 +101,7 @@ export const LegalScreen: React.FC<any> = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
+  container: { flex: 1, backgroundColor: COLORS.bg, width: '100%', maxWidth: SHELL_MAX, alignSelf: 'center' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

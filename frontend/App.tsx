@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { Platform } from 'react-native';
+import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { COLORS } from './src/theme/colors';
 import {
   useFonts,
   Inter_400Regular,
@@ -28,13 +30,23 @@ import { AuthProvider, useAuth } from './src/context/AuthContext';
 
 const Stack = createNativeStackNavigator();
 
+// On the web, screens cap + center themselves into a uniform column; this gray
+// fills the area around it so the app reads as one contained surface. On native
+// the screen always fills the window, so we keep the original white and nothing
+// about the iOS/Android appearance changes.
+const SCENE_BG = Platform.OS === 'web' ? COLORS.pageBackdrop : COLORS.bg;
+const navTheme = {
+  ...DefaultTheme,
+  colors: { ...DefaultTheme.colors, background: SCENE_BG },
+};
+
 function Navigator() {
   const { session, loading, needsOnboarding } = useAuth();
 
   if (loading) return null;
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: SCENE_BG } }}>
       {session && needsOnboarding ? (
         // Signed in but profile incomplete — force the students-only setup form
         <Stack.Screen name="SetupProfile" component={SetupProfileScreen} />
@@ -84,7 +96,7 @@ export default function App() {
         <SplashScreen onDone={() => setSplashDone(true)} />
       ) : (
         <AuthProvider>
-          <NavigationContainer>
+          <NavigationContainer theme={navTheme}>
             <Navigator />
           </NavigationContainer>
         </AuthProvider>

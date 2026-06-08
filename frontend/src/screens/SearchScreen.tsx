@@ -22,7 +22,7 @@ import { CATEGORIES } from '../data/dummyData';
 import { GridCard } from '../components/GridCard';
 import { BottomNav } from '../components/BottomNav';
 import { getItems, Item } from '../lib/api';
-import { useResponsive } from '../lib/responsive';
+import { useResponsive, SHELL_MAX } from '../lib/responsive';
 
 type Sort = 'newest' | 'price_asc' | 'price_desc';
 
@@ -388,12 +388,10 @@ export const SearchScreen: React.FC<any> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
+  container: { flex: 1, backgroundColor: COLORS.bg, width: '100%', maxWidth: SHELL_MAX, alignSelf: 'center' },
 
   headerWrap: {
     width: '100%',
-    maxWidth: 1200,
-    alignSelf: 'center',
     paddingHorizontal: 20,
     paddingBottom: 8,
     backgroundColor: COLORS.bg,

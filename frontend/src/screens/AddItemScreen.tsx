@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { COLORS } from '../theme/colors';
+import { SHELL_MAX } from '../lib/responsive';
 import { useAuth } from '../context/AuthContext';
 import { createItem, uploadPhoto, getMe } from '../lib/api';
 
@@ -287,7 +288,7 @@ export const AddItemScreen: React.FC<any> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
+  container: { flex: 1, backgroundColor: COLORS.bg, width: '100%', maxWidth: SHELL_MAX, alignSelf: 'center' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

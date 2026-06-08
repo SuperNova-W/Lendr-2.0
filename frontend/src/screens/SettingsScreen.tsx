@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../theme/colors';
+import { SHELL_MAX } from '../lib/responsive';
 import { useAuth } from '../context/AuthContext';
 import { getMe, deleteMe, User } from '../lib/api';
 
@@ -117,7 +118,7 @@ export const SettingsScreen: React.FC<any> = ({ navigation }) => {
       <ScrollView
         style={styles.screen}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 48, width: "100%", maxWidth: 640, alignSelf: "center" }}
+        contentContainerStyle={{ paddingBottom: 48, width: "100%" }}
       >
 
         <SectionLabel label="Account" />
@@ -344,6 +345,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.bg,
+    width: '100%',
+    maxWidth: SHELL_MAX,
+    alignSelf: 'center',
   },
   header: {
     flexDirection: 'row',

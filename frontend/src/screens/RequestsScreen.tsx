@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../theme/colors';
+import { SHELL_MAX } from '../lib/responsive';
 import { BottomNav } from '../components/BottomNav';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -152,7 +153,7 @@ export const RequestsScreen: React.FC<any> = ({ navigation }) => {
         <ActivityIndicator size="large" color={COLORS.amber} style={{ marginTop: 60 }} />
       ) : (
         <ScrollView
-          contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 100, width: "100%", maxWidth: 640, alignSelf: "center" }}
+          contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 100, width: "100%" }}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.amber} />}
         >
@@ -289,7 +290,7 @@ export const RequestsScreen: React.FC<any> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
+  container: { flex: 1, backgroundColor: COLORS.bg, width: '100%', maxWidth: SHELL_MAX, alignSelf: 'center' },
   header: {
     paddingHorizontal: 24,
     paddingBottom: 12,

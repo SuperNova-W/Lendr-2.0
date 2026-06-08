@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../theme/colors';
+import { SHELL_MAX } from '../lib/responsive';
 import { useAuth } from '../context/AuthContext';
 import {
   getConversation,
@@ -145,8 +146,6 @@ export const MessageThreadScreen: React.FC<any> = ({ route, navigation }) => {
               padding: 16,
               paddingBottom: 8,
               width: '100%',
-              maxWidth: 640,
-              alignSelf: 'center',
             }}
             showsVerticalScrollIndicator={false}
             onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
@@ -240,7 +239,7 @@ export const MessageThreadScreen: React.FC<any> = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
+  container: { flex: 1, backgroundColor: COLORS.bg, width: '100%', maxWidth: SHELL_MAX, alignSelf: 'center' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -336,8 +335,6 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.border,
     backgroundColor: COLORS.bg,
     width: '100%',
-    maxWidth: 640,
-    alignSelf: 'center',
   },
   input: {
     flex: 1,

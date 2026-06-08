@@ -9,7 +9,7 @@ import { FeaturedCard } from '../components/FeaturedCard';
 import { BottomNav } from '../components/BottomNav';
 import { getItems, getMyStats, getStats, Item, MyStats, Stats } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
-import { useResponsive } from '../lib/responsive';
+import { useResponsive, SHELL_MAX } from '../lib/responsive';
 
 export const HomeScreen: React.FC<any> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
@@ -247,6 +247,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.bg,
+    width: '100%',
+    maxWidth: SHELL_MAX,
+    alignSelf: 'center',
   },
   screen: {
     flex: 1,

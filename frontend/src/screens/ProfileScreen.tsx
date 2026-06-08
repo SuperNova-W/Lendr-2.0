@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../theme/colors';
+import { SHELL_MAX } from '../lib/responsive';
 import { BottomNav } from '../components/BottomNav';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -181,7 +182,7 @@ export const ProfileScreen: React.FC<any> = ({ navigation, route }) => {
       <ScrollView
         style={styles.screen}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 110, width: '100%', maxWidth: 640, alignSelf: 'center' }}
+        contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 110, width: '100%' }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.amber} />}
       >
         {/* ── Header ── */}
@@ -455,6 +456,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.bg,
+    width: '100%',
+    maxWidth: SHELL_MAX,
+    alignSelf: 'center',
   },
   screen: {
     flex: 1,
