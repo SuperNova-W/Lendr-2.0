@@ -25,6 +25,10 @@ provider:
     # accounts. Set in backend/.env. Grants access to these addresses only, not
     # their whole domain. REVIEW before prod.
     EMAIL_ALLOWLIST: ${env:EMAIL_ALLOWLIST, ''}
+    # TEMPORARY: 'true' disables the students-only college-email gate so ANY email
+    # can sign in. Set to '' (or "false") to re-enable the gate. Overridable per
+    # environment via the EMAIL_GATE_OPEN env var.
+    EMAIL_GATE_OPEN: ${env:EMAIL_GATE_OPEN, 'true'}
     # Server-side key for the Google Places (New) proxy at GET /places/nearby.
     # Set it in backend/.env (useDotenv loads it at deploy). When empty, the
     # endpoint returns 503 PLACES_UNCONFIGURED and the app hides place search.

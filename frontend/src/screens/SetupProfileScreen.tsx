@@ -32,14 +32,18 @@ import { FadeInUp, StepHeader, SelectChip, StepInput } from '../components/onboa
 
 const INTEREST_OPTIONS = ['Textbooks', 'Tech', 'Dorm', 'Formal', 'Sports', 'Outdoors', 'Gaming', 'Music', 'Kitchen', 'Other'];
 
-// Best-effort school name from the .edu email (e.g. bruin@ucla.edu → "UCLA").
+// Best-effort school/org name from the email (e.g. bruin@ucla.edu → "UCLA").
+// While signups are open to everyone, non-academic domains fall back to their
+// second-level label (gmail.com → "GMAIL") so we never surface a bare "COM".
 function campusFromEmail(email?: string): string {
   if (!email) return '';
   const domain = email.split('@')[1]?.toLowerCase() ?? '';
-  const label = domain
-    .replace(/\.(edu|ac\.uk|edu\.au|ac\.nz|edu\.sg|ac\.in|edu\.in)$/i, '')
-    .split('.')
-    .pop();
+  if (!domain) return '';
+  const stripped = domain.replace(/\.(edu|ac\.uk|edu\.au|ac\.nz|edu\.sg|ac\.in|edu\.in)$/i, '');
+  const label =
+    stripped === domain
+      ? domain.split('.').slice(0, -1).pop() // generic domain: drop the public TLD
+      : stripped.split('.').pop();           // academic: the school label
   return label ? label.toUpperCase() : '';
 }
 

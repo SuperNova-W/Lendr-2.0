@@ -4,6 +4,16 @@
 //
 // EMAIL_ALLOWLIST (comma-separated full addresses) additionally lets specific
 // individual accounts in (dev/family), without opening up their whole domain.
+//
+// EMAIL_GATE_OPEN — TEMPORARY kill-switch. When truthy ("true"/"1"/"yes"/"on"),
+// the gate is disabled and ANY email may sign in. Set to '' / "false" (or remove
+// it from serverless.yml + backend/.env) to re-enable the students-only gate.
+
+// Whether the college-email gate is currently turned off (open to everyone).
+function isGateOpen(): boolean {
+  const v = (process.env.EMAIL_GATE_OPEN ?? '').trim().toLowerCase();
+  return v === 'true' || v === '1' || v === 'yes' || v === 'on';
+}
 
 const DEFAULT_SUFFIXES = [
   '.edu',       // US
@@ -18,6 +28,10 @@ const DEFAULT_SUFFIXES = [
 
 export function isCollegeEmail(email: string | undefined | null): boolean {
   if (!email) return false;
+
+  // TEMPORARY: marketplace open to everyone — let any email through.
+  if (isGateOpen()) return true;
+
   const normalized = email.trim().toLowerCase();
 
   // Exact-address allowlist (dev + family accounts). Comma-separated full emails
