@@ -21,6 +21,10 @@ provider:
     # Extra allowed email domains/suffixes beyond the built-in .edu list (comma-separated).
     # Used for dev access + international schools. REMOVE non-academic domains before prod.
     EDU_EMAIL_SUFFIXES: ${env:EDU_EMAIL_SUFFIXES, ''}
+    # Exact-address allowlist (comma-separated full emails) for specific dev/family
+    # accounts. Set in backend/.env. Grants access to these addresses only, not
+    # their whole domain. REVIEW before prod.
+    EMAIL_ALLOWLIST: ${env:EMAIL_ALLOWLIST, ''}
     # Server-side key for the Google Places (New) proxy at GET /places/nearby.
     # Set it in backend/.env (useDotenv loads it at deploy). When empty, the
     # endpoint returns 503 PLACES_UNCONFIGURED and the app hides place search.
