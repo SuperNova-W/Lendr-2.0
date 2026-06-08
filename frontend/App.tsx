@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { Platform } from 'react-native';
-import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
+import { View } from 'react-native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { COLORS } from './src/theme/colors';
 import {
   useFonts,
   Inter_400Regular,
@@ -27,18 +26,36 @@ import { ProfileScreen } from './src/screens/ProfileScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { LegalScreen } from './src/screens/LegalScreen';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { TopNav } from './src/components/TopNav';
+import { useResponsive } from './src/lib/responsive';
 
 const Stack = createNativeStackNavigator();
 
-// On the web, screens cap + center themselves into a uniform column; this gray
-// fills the area around it so the app reads as one contained surface. On native
-// the screen always fills the window, so we keep the original white and nothing
-// about the iOS/Android appearance changes.
-const SCENE_BG = Platform.OS === 'web' ? COLORS.pageBackdrop : COLORS.bg;
-const navTheme = {
-  ...DefaultTheme,
-  colors: { ...DefaultTheme.colors, background: SCENE_BG },
+// Route list for the root stack. Params are loose here — this type exists mainly
+// so the navigation ref below is typed (getCurrentRoute().name, navigate(name)).
+type RootStackParamList = {
+  Onboarding: undefined;
+  CreateAccount: undefined;
+  SetupProfile: undefined;
+  Home: undefined;
+  ItemDetail: object | undefined;
+  Requests: undefined;
+  Search: undefined;
+  AddItem: undefined;
+  Messages: undefined;
+  MessageThread: object | undefined;
+  Notifications: undefined;
+  Profile: object | undefined;
+  Settings: undefined;
+  Legal: undefined;
 };
+
+// Shared ref so the web TopNav (rendered outside the navigator) can drive
+// navigation.
+const navigationRef = createNavigationContainerRef<RootStackParamList>();
+
+// Routes that should never show the desktop top nav (auth / setup flows).
+const NO_TOPNAV = ['Onboarding', 'CreateAccount', 'SetupProfile'];
 
 function Navigator() {
   const { session, loading, needsOnboarding } = useAuth();
@@ -46,7 +63,7 @@ function Navigator() {
   if (loading) return null;
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: SCENE_BG } }}>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
       {session && needsOnboarding ? (
         // Signed in but profile incomplete — force the students-only setup form
         <Stack.Screen name="SetupProfile" component={SetupProfileScreen} />
@@ -77,6 +94,39 @@ function Navigator() {
   );
 }
 
+// Holds the navigator plus, on the web at desktop widths, a persistent top
+// navigation bar above it. On native this is just the navigator, so the mobile
+// experience (bottom tab bar, full-width screens) is unchanged.
+function AppShell() {
+  const { session, needsOnboarding } = useAuth();
+  const { isWebDesktop } = useResponsive();
+  const [routeName, setRouteName] = useState<string | undefined>(undefined);
+
+  const handleNavigate = (route: string) => {
+    if (navigationRef.isReady()) navigationRef.navigate(route as never);
+  };
+
+  const showTopNav =
+    isWebDesktop &&
+    !!session &&
+    !needsOnboarding &&
+    !!routeName &&
+    !NO_TOPNAV.includes(routeName);
+
+  return (
+    <NavigationContainer
+      ref={navigationRef}
+      onReady={() => setRouteName(navigationRef.getCurrentRoute()?.name)}
+      onStateChange={() => setRouteName(navigationRef.getCurrentRoute()?.name)}
+    >
+      <View style={{ flex: 1 }}>
+        {showTopNav && <TopNav activeRoute={routeName} onNavigate={handleNavigate} />}
+        <Navigator />
+      </View>
+    </NavigationContainer>
+  );
+}
+
 export default function App() {
   let [fontsLoaded] = useFonts({
     Inter_400Regular,
@@ -96,9 +146,7 @@ export default function App() {
         <SplashScreen onDone={() => setSplashDone(true)} />
       ) : (
         <AuthProvider>
-          <NavigationContainer theme={navTheme}>
-            <Navigator />
-          </NavigationContainer>
+          <AppShell />
         </AuthProvider>
       )}
     </SafeAreaProvider>

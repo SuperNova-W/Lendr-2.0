@@ -26,7 +26,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
 import { COLORS } from '../theme/colors';
-import { SHELL_MAX } from '../lib/responsive';
 import { useAuth } from '../context/AuthContext';
 import { updateMe, uploadPhoto } from '../lib/api';
 import { FadeInUp, StepHeader, SelectChip, StepInput } from '../components/onboarding/OnboardingPrimitives';
@@ -391,7 +390,7 @@ const slideFromRight = SlideInRight.duration(320).easing(Easing.out(Easing.cubic
 const slideFromLeft = SlideInLeft.duration(320).easing(Easing.out(Easing.cubic));
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg, width: '100%', maxWidth: SHELL_MAX, alignSelf: 'center' },
+  container: { flex: 1, backgroundColor: COLORS.bg },
 
   topBar: {
     flexDirection: 'row',

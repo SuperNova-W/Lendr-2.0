@@ -12,12 +12,12 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
+  Platform,
   useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../theme/colors';
-import { SHELL_MAX } from '../lib/responsive';
 import { Item, createRequest, getItem, updateItem, deleteItem } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -213,8 +213,9 @@ export const ItemDetailScreen: React.FC<any> = ({ route, navigation }) => {
   const rating = Number(item.owner_rating);
   const ownerInitial = (item.owner_name ?? '?').charAt(0).toUpperCase();
   // Cap the reading column on wide screens; gallery matches its inner width
-  // (imageContainer has 24px horizontal margins).
-  const DETAIL_MAX = 760;
+  // (imageContainer has 24px horizontal margins). A product-page width on the
+  // web, the original phone/tablet width on native.
+  const DETAIL_MAX = Platform.OS === 'web' ? 960 : 760;
   const colWidth = Math.min(width, DETAIL_MAX);
   const galleryWidth = colWidth - 48;
 
@@ -223,7 +224,7 @@ export const ItemDetailScreen: React.FC<any> = ({ route, navigation }) => {
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.bg} />
 
       {/* ── Header ── */}
-      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 10, maxWidth: DETAIL_MAX }]}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={20} color={COLORS.text1} />
         </Pressable>
@@ -322,7 +323,7 @@ export const ItemDetailScreen: React.FC<any> = ({ route, navigation }) => {
       {/* ── Bottom Action ── */}
       <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 20) }]}>
         {isOwnItem ? (
-          <View style={styles.ownerActions}>
+          <View style={[styles.ownerActions, { maxWidth: galleryWidth }]}>
             <Pressable
               style={[styles.ownerBtn, styles.editItemBtn]}
               onPress={openEdit}
@@ -348,7 +349,7 @@ export const ItemDetailScreen: React.FC<any> = ({ route, navigation }) => {
           </View>
         ) : (
           <Pressable
-            style={[styles.borrowBtn, !item.is_available && styles.borrowBtnDisabled]}
+            style={[styles.borrowBtn, { maxWidth: galleryWidth }, !item.is_available && styles.borrowBtnDisabled]}
             disabled={!item.is_available}
             onPress={() => setSheetOpen(true)}
           >
@@ -538,16 +539,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.bg,
-    width: '100%',
-    maxWidth: SHELL_MAX,
-    alignSelf: 'center',
   },
   screen: {
     flex: 1,
   },
   header: {
     width: '100%',
-    maxWidth: 760,
     alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
@@ -721,7 +718,6 @@ const styles = StyleSheet.create({
   },
   borrowBtn: {
     width: '100%',
-    maxWidth: 712,
     backgroundColor: COLORS.amber,
     borderRadius: 12,
     paddingVertical: 16,
@@ -741,7 +737,6 @@ const styles = StyleSheet.create({
   // ── Owner actions (Edit / Delete) ──
   ownerActions: {
     width: '100%',
-    maxWidth: 712,
     flexDirection: 'row',
     gap: 12,
   },

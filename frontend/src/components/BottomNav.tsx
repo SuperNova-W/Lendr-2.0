@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../theme/colors';
+import { useResponsive } from '../lib/responsive';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -19,6 +20,10 @@ interface BottomNavProps {
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({ activeNav, setActiveNav, paddingBottom }) => {
+  const { isWebDesktop } = useResponsive();
+  // On the desktop web the persistent top nav replaces the bottom tab bar.
+  if (isWebDesktop) return null;
+
   return (
     <View style={[styles.nav, { paddingBottom: Math.max(paddingBottom, 20) }]}>
       <View style={styles.inner}>

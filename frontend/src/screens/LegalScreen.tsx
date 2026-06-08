@@ -3,7 +3,6 @@ import { StyleSheet, Text, View, ScrollView, Pressable, StatusBar } from 'react-
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../theme/colors';
-import { SHELL_MAX } from '../lib/responsive';
 
 type Section = { heading: string; body: string };
 
@@ -101,7 +100,7 @@ export const LegalScreen: React.FC<any> = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg, width: '100%', maxWidth: SHELL_MAX, alignSelf: 'center' },
+  container: { flex: 1, backgroundColor: COLORS.bg },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

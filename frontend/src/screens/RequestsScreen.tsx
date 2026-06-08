@@ -16,7 +16,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../theme/colors';
-import { SHELL_MAX } from '../lib/responsive';
 import { BottomNav } from '../components/BottomNav';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -290,7 +289,7 @@ export const RequestsScreen: React.FC<any> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg, width: '100%', maxWidth: SHELL_MAX, alignSelf: 'center' },
+  container: { flex: 1, backgroundColor: COLORS.bg },
   header: {
     paddingHorizontal: 24,
     paddingBottom: 12,
