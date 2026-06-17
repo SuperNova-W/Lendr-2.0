@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
+import { useResponsive } from '../lib/responsive';
 import { searchNearbyPlaces, PlaceResult } from '../lib/api';
 import {
   getCurrentLocation,
@@ -34,8 +35,10 @@ const PERMISSION_MSG =
 
 export const ShareLocationModal: React.FC<Props> = ({ visible, onClose, onPick }) => {
   const insets = useSafeAreaInsets();
+  const { isWebDesktop } = useResponsive();
   const { session } = useAuth();
   const token = session?.access_token;
+  const centered = isWebDesktop;
 
   const [mode, setMode] = useState<Mode>('menu');
   const [loadingCurrent, setLoadingCurrent] = useState(false);
@@ -122,136 +125,170 @@ export const ShareLocationModal: React.FC<Props> = ({ visible, onClose, onPick }
   }
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-        <View style={styles.handle} />
+    <Modal
+      visible={visible}
+      transparent
+      animationType={centered ? 'fade' : 'slide'}
+      onRequestClose={onClose}
+    >
+      <View style={[styles.modalRoot, centered ? styles.modalRootCentered : styles.modalRootBottom]}>
+        <Pressable style={styles.backdrop} onPress={onClose} />
+        <View
+          style={[
+            styles.sheet,
+            centered ? styles.dialog : styles.bottomSheet,
+            { paddingBottom: centered ? 24 : Math.max(insets.bottom, 20) },
+          ]}
+        >
+          {!centered && <View style={styles.handle} />}
 
-        <View style={styles.header}>
-          {mode === 'places' ? (
-            <Pressable onPress={() => setMode('menu')} hitSlop={8} style={styles.headerBtn}>
-              <Ionicons name="chevron-back" size={20} color={COLORS.text1} />
-            </Pressable>
-          ) : (
-            <View style={styles.headerBtn} />
-          )}
-          <Text style={styles.title}>{mode === 'places' ? 'Pick a place' : 'Share location'}</Text>
-          <Pressable onPress={onClose} hitSlop={8} style={styles.headerBtn}>
-            <Ionicons name="close" size={20} color={COLORS.text2} />
-          </Pressable>
-        </View>
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        {mode === 'menu' ? (
-          <View style={{ gap: 10, marginTop: 4 }}>
-            <Pressable style={styles.option} onPress={shareCurrent} disabled={loadingCurrent}>
-              <View style={styles.optionIcon}>
-                {loadingCurrent ? (
-                  <ActivityIndicator size="small" color={COLORS.amber} />
-                ) : (
-                  <Ionicons name="navigate" size={20} color={COLORS.amber} />
-                )}
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.optionTitle}>Share current location</Text>
-                <Text style={styles.optionSub}>Send where you are right now</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={COLORS.text3} />
-            </Pressable>
-
-            <Pressable style={styles.option} onPress={openPicker}>
-              <View style={styles.optionIcon}>
-                <Ionicons name="business" size={20} color={COLORS.amber} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.optionTitle}>Pick a nearby place</Text>
-                <Text style={styles.optionSub}>Choose a hall, building, or spot to meet</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={COLORS.text3} />
+          <View style={styles.header}>
+            {mode === 'places' ? (
+              <Pressable onPress={() => setMode('menu')} hitSlop={8} style={styles.headerBtn}>
+                <Ionicons name="chevron-back" size={20} color={COLORS.text1} />
+              </Pressable>
+            ) : (
+              <View style={styles.headerBtn} />
+            )}
+            <Text style={styles.title}>{mode === 'places' ? 'Pick a place' : 'Share location'}</Text>
+            <Pressable onPress={onClose} hitSlop={8} style={styles.headerBtn}>
+              <Ionicons name="close" size={20} color={COLORS.text2} />
             </Pressable>
           </View>
-        ) : (
-          <View style={styles.pickerBody}>
-            <View style={styles.searchRow}>
-              <Ionicons name="search" size={16} color={COLORS.text3} />
-              <TextInput
-                style={styles.searchInput}
-                value={query}
-                onChangeText={setQuery}
-                placeholder="Search places…"
-                placeholderTextColor={COLORS.text3}
-                autoCorrect={false}
-                returnKeyType="search"
-              />
-              {query.length > 0 && (
-                <Pressable onPress={() => setQuery('')} hitSlop={8}>
-                  <Ionicons name="close-circle" size={16} color={COLORS.text3} />
-                </Pressable>
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          {mode === 'menu' ? (
+            <View style={{ gap: 10, marginTop: 4 }}>
+              <Pressable style={styles.option} onPress={shareCurrent} disabled={loadingCurrent}>
+                <View style={styles.optionIcon}>
+                  {loadingCurrent ? (
+                    <ActivityIndicator size="small" color={COLORS.amber} />
+                  ) : (
+                    <Ionicons name="navigate" size={20} color={COLORS.amber} />
+                  )}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.optionTitle}>Share current location</Text>
+                  <Text style={styles.optionSub}>Send where you are right now</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={COLORS.text3} />
+              </Pressable>
+
+              <Pressable style={styles.option} onPress={openPicker}>
+                <View style={styles.optionIcon}>
+                  <Ionicons name="business" size={20} color={COLORS.amber} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.optionTitle}>Pick a nearby place</Text>
+                  <Text style={styles.optionSub}>Choose a hall, building, or spot to meet</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={COLORS.text3} />
+              </Pressable>
+            </View>
+          ) : (
+            <View style={styles.pickerBody}>
+              <View style={styles.searchRow}>
+                <Ionicons name="search" size={16} color={COLORS.text3} />
+                <TextInput
+                  style={styles.searchInput}
+                  value={query}
+                  onChangeText={setQuery}
+                  placeholder="Search places…"
+                  placeholderTextColor={COLORS.text3}
+                  autoCorrect={false}
+                  returnKeyType="search"
+                />
+                {query.length > 0 && (
+                  <Pressable onPress={() => setQuery('')} hitSlop={8}>
+                    <Ionicons name="close-circle" size={16} color={COLORS.text3} />
+                  </Pressable>
+                )}
+              </View>
+
+              {unconfigured ? (
+                <Text style={styles.note}>
+                  Place search isn’t set up yet. You can still share your current location.
+                </Text>
+              ) : placesLoading ? (
+                <ActivityIndicator size="small" color={COLORS.amber} style={{ marginTop: 24 }} />
+              ) : (
+                <ScrollView
+                  style={styles.list}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
+                >
+                  {places.length === 0 && !error ? (
+                    <Text style={styles.note}>No places found nearby.</Text>
+                  ) : (
+                    places.map((p) => {
+                      const miles = origin ? haversineMiles(origin, p) : null;
+                      return (
+                        <Pressable key={p.id || p.name} style={styles.placeRow} onPress={() => pickPlace(p)}>
+                          <Ionicons name="location-outline" size={18} color={COLORS.text2} />
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.placeName} numberOfLines={1}>{p.name}</Text>
+                            {p.address ? (
+                              <Text style={styles.placeAddr} numberOfLines={1}>{p.address}</Text>
+                            ) : null}
+                          </View>
+                          {miles != null ? (
+                            <Text style={styles.placeDist}>{miles < 0.1 ? '<0.1' : miles.toFixed(1)} mi</Text>
+                          ) : null}
+                        </Pressable>
+                      );
+                    })
+                  )}
+                </ScrollView>
               )}
             </View>
-
-            {unconfigured ? (
-              <Text style={styles.note}>
-                Place search isn’t set up yet. You can still share your current location.
-              </Text>
-            ) : placesLoading ? (
-              <ActivityIndicator size="small" color={COLORS.amber} style={{ marginTop: 24 }} />
-            ) : (
-              <ScrollView
-                style={styles.list}
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
-              >
-                {places.length === 0 && !error ? (
-                  <Text style={styles.note}>No places found nearby.</Text>
-                ) : (
-                  places.map((p) => {
-                    const miles = origin ? haversineMiles(origin, p) : null;
-                    return (
-                      <Pressable key={p.id || p.name} style={styles.placeRow} onPress={() => pickPlace(p)}>
-                        <Ionicons name="location-outline" size={18} color={COLORS.text2} />
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.placeName} numberOfLines={1}>{p.name}</Text>
-                          {p.address ? (
-                            <Text style={styles.placeAddr} numberOfLines={1}>{p.address}</Text>
-                          ) : null}
-                        </View>
-                        {miles != null ? (
-                          <Text style={styles.placeDist}>{miles < 0.1 ? '<0.1' : miles.toFixed(1)} mi</Text>
-                        ) : null}
-                      </Pressable>
-                    );
-                  })
-                )}
-              </ScrollView>
-            )}
-          </View>
-        )}
+          )}
+        </View>
       </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  backdrop: {
+  modalRoot: {
     flex: 1,
+    paddingHorizontal: 20,
+  },
+  modalRootCentered: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+  },
+  modalRootBottom: {
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 0,
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.4)',
   },
   sheet: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
     maxHeight: '80%',
     backgroundColor: COLORS.bg,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
     paddingHorizontal: 24,
     paddingTop: 12,
     width: '100%',
     maxWidth: 640,
-    alignSelf: 'center',
+  },
+  bottomSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  dialog: {
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.18,
+    shadowRadius: 38,
+    elevation: 12,
   },
   handle: {
     alignSelf: 'center',
