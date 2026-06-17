@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Linking,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -35,6 +36,41 @@ import {
 
 const fmtTime = (iso: string) =>
   new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+
+const fmtDate = (iso: string) =>
+  new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+const fmtDay = (iso: string) => {
+  const d = new Date(iso);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) return 'Today';
+
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+
+  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+};
+
+type Status = ConversationDetail['request_status'];
+
+const STATUS_TONE: Record<Status, { bg: string; text: string; label: string }> = {
+  pending:   { bg: '#FFF4E0', text: '#946200', label: 'Pending' },
+  approved:  { bg: COLORS.greenLight, text: COLORS.green, label: 'Approved' },
+  active:    { bg: COLORS.greenLight, text: COLORS.green, label: 'Active' },
+  returned:  { bg: '#ECECF2', text: '#5A5A6E', label: 'Returned' },
+  declined:  { bg: COLORS.redLight, text: COLORS.red, label: 'Declined' },
+  cancelled: { bg: '#ECECF2', text: '#5A5A6E', label: 'Cancelled' },
+};
+
+function initials(name: string) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part.charAt(0).toUpperCase())
+    .join('') || '?';
+}
 
 export const MessageThreadScreen: React.FC<any> = ({ route, navigation }) => {
   const insets = useSafeAreaInsets();
@@ -111,6 +147,10 @@ export const MessageThreadScreen: React.FC<any> = ({ route, navigation }) => {
 
   const otherName = detail?.other_user_name ?? initialOtherName ?? 'Conversation';
   const itemTitle = detail?.item_title ?? initialItemTitle;
+  const status = detail ? STATUS_TONE[detail.request_status] : null;
+  const avatar = detail?.other_user_avatar ?? null;
+  const itemPhoto = detail?.item_photos?.[0] ?? null;
+  const role = detail?.borrower_id === myId ? 'Borrowing' : 'Lending';
   const canSend = text.trim().length > 0 && !sending;
 
   return (
@@ -123,12 +163,29 @@ export const MessageThreadScreen: React.FC<any> = ({ route, navigation }) => {
           <Ionicons name="chevron-back" size={20} color={COLORS.text1} />
         </Pressable>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle} numberOfLines={1}>{otherName}</Text>
-          {itemTitle ? (
-            <Text style={styles.headerSub} numberOfLines={1}>{itemTitle}</Text>
-          ) : null}
+          <View style={styles.headerIdentity}>
+            <View style={styles.headerAvatar}>
+              {avatar ? (
+                <Image source={{ uri: avatar }} style={styles.headerAvatarImg} />
+              ) : (
+                <Text style={styles.headerAvatarText}>{initials(otherName)}</Text>
+              )}
+            </View>
+            <View style={styles.headerText}>
+              <Text style={styles.headerTitle} numberOfLines={1}>{otherName}</Text>
+              {itemTitle ? (
+                <Text style={styles.headerSub} numberOfLines={1}>{itemTitle}</Text>
+              ) : null}
+            </View>
+          </View>
         </View>
-        <View style={{ width: 40 }} />
+        {status ? (
+          <View style={[styles.headerStatus, { backgroundColor: status.bg }]}>
+            <Text style={[styles.headerStatusText, { color: status.text }]}>{status.label}</Text>
+          </View>
+        ) : (
+          <View style={{ width: 40 }} />
+        )}
       </View>
 
       <KeyboardAvoidingView
@@ -150,45 +207,82 @@ export const MessageThreadScreen: React.FC<any> = ({ route, navigation }) => {
             onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
             keyboardShouldPersistTaps="handled"
           >
+            {detail ? (
+              <View style={styles.contextCard}>
+                <View style={styles.contextThumb}>
+                  {itemPhoto ? (
+                    <Image source={{ uri: itemPhoto }} style={styles.contextThumbImg} />
+                  ) : (
+                    <Ionicons name="image-outline" size={22} color={COLORS.text3} />
+                  )}
+                </View>
+                <View style={styles.contextBody}>
+                  <Text style={styles.contextLabel}>{role}</Text>
+                  <Text style={styles.contextTitle} numberOfLines={1}>{detail.item_title}</Text>
+                  <Text style={styles.contextMeta} numberOfLines={1}>
+                    {fmtDate(detail.start_date)} - {fmtDate(detail.end_date)} · ${Number(detail.total_price)}
+                  </Text>
+                </View>
+                {status ? (
+                  <View style={[styles.contextStatus, { backgroundColor: status.bg }]}>
+                    <Text style={[styles.contextStatusText, { color: status.text }]}>{status.label}</Text>
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
+
             {messages.length === 0 ? (
               <View style={styles.empty}>
+                <View style={styles.emptyIcon}>
+                  <Ionicons name="chatbubbles-outline" size={30} color={COLORS.text3} />
+                </View>
+                <Text style={styles.emptyTitle}>Start the conversation</Text>
                 <Text style={styles.emptyText}>
                   No messages yet. Say hello about {itemTitle ? `“${itemTitle}”` : 'this item'}.
                 </Text>
               </View>
             ) : (
-              messages.map(m => {
+              messages.map((m, index) => {
                 const mine = m.sender_id === myId;
                 const loc = parseLocationMessage(m.body);
+                const prev = messages[index - 1];
+                const showDay = !prev ||
+                  new Date(prev.created_at).toDateString() !== new Date(m.created_at).toDateString();
                 return (
-                  <View
-                    key={m.id}
-                    style={[styles.bubbleRow, mine ? styles.bubbleRowMine : styles.bubbleRowTheirs]}
-                  >
-                    <View style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleTheirs]}>
-                      {loc ? (
-                        <Pressable onPress={() => Linking.openURL(mapsUrl(loc))}>
-                          <View style={styles.locRow}>
-                            <Ionicons name="location" size={16} color={mine ? '#fff' : COLORS.amber} />
-                            <Text style={[styles.locName, mine && styles.bubbleTextMine]} numberOfLines={2}>
-                              {loc.name ?? 'Shared location'}
-                            </Text>
-                          </View>
-                          {loc.address ? (
-                            <Text style={[styles.locAddr, mine && styles.locAddrMine]} numberOfLines={2}>
-                              {loc.address}
-                            </Text>
-                          ) : null}
-                          <Text style={[styles.locOpen, mine && styles.locOpenMine]}>Open in Maps</Text>
-                        </Pressable>
-                      ) : (
-                        <Text style={[styles.bubbleText, mine && styles.bubbleTextMine]}>{m.body}</Text>
-                      )}
-                      <Text style={[styles.bubbleTime, mine && styles.bubbleTimeMine]}>
-                        {fmtTime(m.created_at)}
-                      </Text>
+                  <React.Fragment key={m.id}>
+                    {showDay ? (
+                      <View style={styles.dayDivider}>
+                        <Text style={styles.dayText}>{fmtDay(m.created_at)}</Text>
+                      </View>
+                    ) : null}
+                    <View
+                      style={[styles.bubbleRow, mine ? styles.bubbleRowMine : styles.bubbleRowTheirs]}
+                    >
+                      <View style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleTheirs]}>
+                        {loc ? (
+                          <Pressable onPress={() => Linking.openURL(mapsUrl(loc))}>
+                            <View style={styles.locRow}>
+                              <Ionicons name="location" size={16} color={mine ? '#fff' : COLORS.amber} />
+                              <Text style={[styles.locName, mine && styles.bubbleTextMine]} numberOfLines={2}>
+                                {loc.name ?? 'Shared location'}
+                              </Text>
+                            </View>
+                            {loc.address ? (
+                              <Text style={[styles.locAddr, mine && styles.locAddrMine]} numberOfLines={2}>
+                                {loc.address}
+                              </Text>
+                            ) : null}
+                            <Text style={[styles.locOpen, mine && styles.locOpenMine]}>Open in Maps</Text>
+                          </Pressable>
+                        ) : (
+                          <Text style={[styles.bubbleText, mine && styles.bubbleTextMine]}>{m.body}</Text>
+                        )}
+                        <Text style={[styles.bubbleTime, mine && styles.bubbleTimeMine]}>
+                          {fmtTime(m.created_at)}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
+                  </React.Fragment>
                 );
               })
             )}
@@ -260,11 +354,37 @@ const styles = StyleSheet.create({
   },
   headerCenter: {
     flex: 1,
+    paddingHorizontal: 10,
+  },
+  headerIdentity: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
+    justifyContent: 'center',
+    gap: 10,
+  },
+  headerAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: COLORS.amberLight,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  headerAvatarImg: { width: '100%', height: '100%' },
+  headerAvatarText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 13,
+    color: COLORS.amberDark,
+  },
+  headerText: {
+    minWidth: 0,
+    maxWidth: '72%',
   },
   headerTitle: {
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Inter_700Bold',
     fontSize: 16,
     color: COLORS.text1,
   },
@@ -274,11 +394,91 @@ const styles = StyleSheet.create({
     color: COLORS.text3,
     marginTop: 1,
   },
+  headerStatus: {
+    minWidth: 40,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    borderRadius: 999,
+    alignItems: 'center',
+  },
+  headerStatusText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 10,
+  },
+
+  contextCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surface,
+    marginBottom: 18,
+  },
+  contextThumb: {
+    width: 52,
+    height: 52,
+    borderRadius: 12,
+    backgroundColor: COLORS.surfaceSub,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  contextThumbImg: { width: '100%', height: '100%' },
+  contextBody: {
+    flex: 1,
+    minWidth: 0,
+  },
+  contextLabel: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 11,
+    color: COLORS.green,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  contextTitle: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 15,
+    color: COLORS.text1,
+    marginTop: 2,
+  },
+  contextMeta: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 12,
+    color: COLORS.text3,
+    marginTop: 2,
+  },
+  contextStatus: {
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    borderRadius: 999,
+  },
+  contextStatusText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 10,
+  },
 
   empty: {
     alignItems: 'center',
     paddingVertical: 80,
     paddingHorizontal: 32,
+  },
+  emptyIcon: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: COLORS.surfaceSub,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  emptyTitle: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 18,
+    color: COLORS.text1,
+    marginBottom: 6,
   },
   emptyText: {
     fontFamily: 'Inter_400Regular',
@@ -286,6 +486,22 @@ const styles = StyleSheet.create({
     color: COLORS.text3,
     textAlign: 'center',
     lineHeight: 21,
+  },
+
+  dayDivider: {
+    alignItems: 'center',
+    marginBottom: 12,
+    marginTop: 2,
+  },
+  dayText: {
+    overflow: 'hidden',
+    borderRadius: 999,
+    backgroundColor: COLORS.surfaceSub,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 11,
+    color: COLORS.text3,
   },
 
   bubbleRow: {
@@ -307,6 +523,8 @@ const styles = StyleSheet.create({
   bubbleTheirs: {
     backgroundColor: COLORS.surfaceSub,
     borderBottomLeftRadius: 4,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   bubbleText: {
     fontFamily: 'Inter_400Regular',
