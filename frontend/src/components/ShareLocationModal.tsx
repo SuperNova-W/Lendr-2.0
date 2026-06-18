@@ -8,12 +8,12 @@ import {
   ScrollView,
   ActivityIndicator,
   StyleSheet,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
-import { useResponsive } from '../lib/responsive';
 import { searchNearbyPlaces, PlaceResult } from '../lib/api';
 import {
   getCurrentLocation,
@@ -35,10 +35,9 @@ const PERMISSION_MSG =
 
 export const ShareLocationModal: React.FC<Props> = ({ visible, onClose, onPick }) => {
   const insets = useSafeAreaInsets();
-  const { isWebDesktop } = useResponsive();
   const { session } = useAuth();
   const token = session?.access_token;
-  const centered = isWebDesktop;
+  const centered = Platform.OS === 'web';
 
   const [mode, setMode] = useState<Mode>('menu');
   const [loadingCurrent, setLoadingCurrent] = useState(false);
@@ -252,6 +251,8 @@ export const ShareLocationModal: React.FC<Props> = ({ visible, onClose, onPick }
 const styles = StyleSheet.create({
   modalRoot: {
     flex: 1,
+    width: '100%',
+    height: '100%',
     paddingHorizontal: 20,
   },
   modalRootCentered: {
@@ -269,6 +270,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.4)',
   },
   sheet: {
+    zIndex: 1,
     maxHeight: '80%',
     backgroundColor: COLORS.bg,
     paddingHorizontal: 24,
